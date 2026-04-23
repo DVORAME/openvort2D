@@ -1,12 +1,16 @@
 This code simulates the motion of vortex points in superfluid 4He using the Taichi 
 language (https://www.taichi-lang.org/) for parallelization of the calculation.
 
+Run `uv sync` to install necessary dependencies (you need the `uv` package management
+tool, https://docs.astral.sh/uv/getting-started/installation/)
+
 Various models of pinning, dissipation and externally-applied superflow are available. Run
 `python src/main.py --help` for a list of options.
 
 Example:
 ```
 #!/bin/bash
+source .venv/bin/activate
 alpha=0.034
 alphap=0.001383
 D=0.1
