@@ -1,3 +1,5 @@
+-- This branch includes some specific features intended for running on the MFF HPC cluster. Primarly use the `main` branch. --
+
 This code simulates the motion of vortex points in superfluid 4He using the Taichi 
 language (https://www.taichi-lang.org/) for parallelization of the calculation.
 
