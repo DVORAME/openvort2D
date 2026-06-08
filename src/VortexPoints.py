@@ -218,7 +218,6 @@ def annihilate_ti(xs: TI_ARRAY, ys: TI_ARRAY,
                 if move_on:
                     break
             if move_on:
-                # XXX Why? Doesn't this prevent double annihilation detection? I fear that this not only makes this calcullation pointless, but also allows for accidental double annihilation (rare as it would be anyway).
                 break
     
     # If any entry in to_annihilate > 1 it means a vortex would be removed
@@ -300,7 +299,6 @@ def annihilate_walls_ti(xs: TI_ARRAY, ys: TI_ARRAY,
                     move_on = True
                     break
             if move_on:
-                # XXX Same concern as above.
                 break
     
     OK = True
