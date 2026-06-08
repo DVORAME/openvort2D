@@ -22,14 +22,19 @@ import taichi as ti
 
 # Quantum of circulation (cm^2/s) used in the point-vortex velocity formula
 # Physical meaning: circulation quantum that sets the strength of the induced
-# velocity field of each point vortex. Value chosen for realistic units used
-# by the original project's simulations.
-kappa = 9.96e-4
+# velocity field of each point vortex.
+KAPPA = 9.96e-4
+PI = 3.14159
+
+# Cache Taichi types as constants because Python doesn't like calls in type expressions.
+TI_ARRAY = ti.types.ndarray()
+TI_INT_ARRAY = ti.types.ndarray(dtype=ti.int64)
+# Float cannot be cached for some reason, using pyright ignore to silence the type checker.
 
 
 @ti.kernel
-def update_velocity_ti(xs: ti.types.ndarray(), ys: ti.types.ndarray(), signs: ti.types.ndarray(),
-                       vx: ti.types.ndarray(), vy: ti.types.ndarray(), shifts: ti.types.ndarray()):
+def update_velocity_ti(xs: TI_ARRAY, ys: TI_ARRAY, signs: TI_ARRAY,
+                       vx: TI_ARRAY, vy: TI_ARRAY, shifts: TI_ARRAY):
     """Compute velocities on each vortex point using periodic image shifts.
 
     This Taichi kernel evaluates the 2D point-vortex Biot-Savart induced
@@ -59,14 +64,15 @@ def update_velocity_ti(xs: ti.types.ndarray(), ys: ti.types.ndarray(), signs: ti
             for xshift in range(S):
                 for yshift in range(S):
                     # skip self-interaction for the zero-image
+                    # XXX Why include images? Won't their effect be cancelled by symmetry??
                     if k == j and shifts[xshift] == 0 and shifts[yshift] == 0:
                         continue
                     x_jk = xs[j] - xs[k] + shifts[xshift]
                     y_jk = ys[j] - ys[k] + shifts[yshift]
                     r2_jk = x_jk**2 + y_jk**2
                     # Biot-Savart for a point vortex in 2D: v = (kappa/2pi) * (z_hat x r) / r^2
-                    vx[j] += -kappa/2/3.14159/r2_jk*y_jk*signs[k]
-                    vy[j] += kappa/2/3.14159/r2_jk*x_jk*signs[k]
+                    vx[j] += -KAPPA/2/PI/r2_jk*y_jk*signs[k]
+                    vy[j] += KAPPA/2/PI/r2_jk*x_jk*signs[k]
     # Notes:
     #  - `signs` carries +/-1 for vortex circulation and 0 for removed vortices.
     #  - We explicitly skip the self-interaction term for the zero-image only;
@@ -76,8 +82,8 @@ def update_velocity_ti(xs: ti.types.ndarray(), ys: ti.types.ndarray(), signs: ti
     #    Python-side resizing: kernels expect consistent array sizes.
 
 @ti.kernel
-def update_velocity_walls_ti(xs: ti.types.ndarray(), ys: ti.types.ndarray(), signs: ti.types.ndarray(),
-                             vx: ti.types.ndarray(), vy: ti.types.ndarray(), D: ti.types.float64):
+def update_velocity_walls_ti(xs: TI_ARRAY, ys: TI_ARRAY, signs: TI_ARRAY,
+                             vx: TI_ARRAY, vy: TI_ARRAY, D: ti.types.float64): # pyright: ignore[reportInvalidTypeForm]
     """Compute velocities with hard-wall boundary conditions using mirror images.
 
     Instead of full periodic tiling, this kernel enforces no-penetration at
@@ -96,11 +102,12 @@ def update_velocity_walls_ti(xs: ti.types.ndarray(), ys: ti.types.ndarray(), sig
                 x_jk = xs[j] - xs[k] + xshift*D
 
                 # no shift (regular contribution)
+                # XXX Same question as before.
                 if k!=j or xshift!=0:
                     y_jk = ys[j] - ys[k]
                     r2_jk = x_jk**2 + y_jk**2
-                    vx[j] += -kappa/2/3.14159/r2_jk*y_jk*signs[k]
-                    vy[j] += kappa/2/3.14159/r2_jk*x_jk*signs[k]
+                    vx[j] += -KAPPA/2/PI/r2_jk*y_jk*signs[k]
+                    vy[j] += KAPPA/2/PI/r2_jk*x_jk*signs[k]
 
                 # mirror across top wall (image position y -> 2D - y). The
                 # image vortex has opposite circulation for an impermeable
@@ -109,8 +116,8 @@ def update_velocity_walls_ti(xs: ti.types.ndarray(), ys: ti.types.ndarray(), sig
                 mirror_flip = -1
                 y_jk = ys[j] - (2*D - ys[k])
                 r2_jk = x_jk**2 + y_jk**2
-                vx[j] += -kappa/2/3.14159/r2_jk*y_jk*signs[k]*mirror_flip
-                vy[j] += kappa/2/3.14159/r2_jk*x_jk*signs[k]*mirror_flip
+                vx[j] += -KAPPA/2/PI/r2_jk*y_jk*signs[k]*mirror_flip
+                vy[j] += KAPPA/2/PI/r2_jk*x_jk*signs[k]*mirror_flip
                 
                 # mirror across bottom wall (image position y -> -y).
                 # Again the image circulations are flipped to enforce the
@@ -118,13 +125,13 @@ def update_velocity_walls_ti(xs: ti.types.ndarray(), ys: ti.types.ndarray(), sig
                 mirror_flip = -1
                 y_jk = ys[j] + ys[k]
                 r2_jk = x_jk**2 + y_jk**2
-                vx[j] += -kappa/2/3.14159/r2_jk*y_jk*signs[k]*mirror_flip
-                vy[j] += kappa/2/3.14159/r2_jk*x_jk*signs[k]*mirror_flip
+                vx[j] += -KAPPA/2/PI/r2_jk*y_jk*signs[k]*mirror_flip
+                vy[j] += KAPPA/2/PI/r2_jk*x_jk*signs[k]*mirror_flip
 
 @ti.kernel
-def calculate_velocity_walls_ti(vort_xs: ti.types.ndarray(), vort_ys: ti.types.ndarray(), signs: ti.types.ndarray(),
-                                xs: ti.types.ndarray(), ys: ti.types.ndarray(),
-                                vx: ti.types.ndarray(), vy: ti.types.ndarray(), D: ti.types.float64):
+def calculate_velocity_walls_ti(vort_xs: TI_ARRAY, vort_ys: TI_ARRAY, signs: TI_ARRAY,
+                                xs: TI_ARRAY, ys: TI_ARRAY,
+                                vx: TI_ARRAY, vy: TI_ARRAY, D: ti.types.float64): # pyright: ignore[reportInvalidTypeForm]
     """Compute velocities at arbitrary probe positions `xs,ys` due to vortices with walls.
 
     This kernel mirrors the logic of `update_velocity_walls_ti` but evaluates the
@@ -147,27 +154,27 @@ def calculate_velocity_walls_ti(vort_xs: ti.types.ndarray(), vort_ys: ti.types.n
                 # no shift
                 y_jk = ys[j] - vort_ys[k]
                 r2_jk = x_jk**2 + y_jk**2
-                vx[j] += -kappa/2/3.14159/r2_jk*y_jk*signs[k]
-                vy[j] += kappa/2/3.14159/r2_jk*x_jk*signs[k]
+                vx[j] += -KAPPA/2/PI/r2_jk*y_jk*signs[k]
+                vy[j] += KAPPA/2/PI/r2_jk*x_jk*signs[k]
 
                 # mirror across top
                 mirror_flip = -1
                 y_jk = ys[j] - (2*D - vort_ys[k])
                 r2_jk = x_jk**2 + y_jk**2
-                vx[j] += -kappa/2/3.14159/r2_jk*y_jk*signs[k]*mirror_flip
-                vy[j] += kappa/2/3.14159/r2_jk*x_jk*signs[k]*mirror_flip
+                vx[j] += -KAPPA/2/PI/r2_jk*y_jk*signs[k]*mirror_flip
+                vy[j] += KAPPA/2/PI/r2_jk*x_jk*signs[k]*mirror_flip
                 
                 # mirror across bottom
                 mirror_flip = -1
                 y_jk = ys[j] + vort_ys[k]
                 r2_jk = x_jk**2 + y_jk**2
-                vx[j] += -kappa/2/3.14159/r2_jk*y_jk*signs[k]*mirror_flip
-                vy[j] += kappa/2/3.14159/r2_jk*x_jk*signs[k]*mirror_flip
+                vx[j] += -KAPPA/2/PI/r2_jk*y_jk*signs[k]*mirror_flip
+                vy[j] += KAPPA/2/PI/r2_jk*x_jk*signs[k]*mirror_flip
 
 @ti.kernel
-def annihilate_ti(xs: ti.types.ndarray(), ys: ti.types.ndarray(), 
-                  signs: ti.types.ndarray(dtype=ti.int64), shifts: ti.types.ndarray(),
-                  a0: float, to_annihilate: ti.types.ndarray()) -> int:
+def annihilate_ti(xs: TI_ARRAY, ys: TI_ARRAY, 
+                  signs: TI_INT_ARRAY, shifts: TI_ARRAY,
+                  a0: float, to_annihilate: TI_ARRAY) -> int:
     """Detect and remove close vortex-antivortex pairs using periodic shifts.
 
     The kernel first marks pairs closer than `a0` for annihilation into
@@ -211,6 +218,7 @@ def annihilate_ti(xs: ti.types.ndarray(), ys: ti.types.ndarray(),
                 if move_on:
                     break
             if move_on:
+                # XXX Why? Doesn't this prevent double annihilation detection? I fear that this not only makes this calcullation pointless, but also allows for accidental double annihilation (rare as it would be anyway).
                 break
     
     # If any entry in to_annihilate > 1 it means a vortex would be removed
@@ -228,6 +236,7 @@ def annihilate_ti(xs: ti.types.ndarray(), ys: ti.types.ndarray(),
                 signs[j] = 0
     else:
         # serialize removal to avoid conflicts when a vortex is close to >1 partner
+        # XXX I don't quite understand this, why not do that in the first loop? Why iterate over whole N? The pair would be removed when teh first vortex comes up anyway.
         ti.loop_config(serialize=True)
         for j in range(N):
             if signs[j] == 0:
@@ -258,9 +267,9 @@ def annihilate_ti(xs: ti.types.ndarray(), ys: ti.types.ndarray(),
     return OK
 
 @ti.kernel
-def annihilate_walls_ti(xs: ti.types.ndarray(), ys: ti.types.ndarray(), 
-                        signs: ti.types.ndarray(dtype=ti.int64), shifts: ti.types.ndarray(),
-                        a0: float, to_annihilate: ti.types.ndarray()) -> int:
+def annihilate_walls_ti(xs: TI_ARRAY, ys: TI_ARRAY, 
+                        signs: TI_INT_ARRAY, shifts: TI_ARRAY,
+                        a0: float, to_annihilate: TI_ARRAY) -> int:
     """Annihilate vortex-antivortex pairs considering wall reflections.
 
     Similar to `annihilate_ti`, but distance checks only consider x-shifts
@@ -291,6 +300,7 @@ def annihilate_walls_ti(xs: ti.types.ndarray(), ys: ti.types.ndarray(),
                     move_on = True
                     break
             if move_on:
+                # XXX Same concern as above.
                 break
     
     OK = True
@@ -407,6 +417,7 @@ class VortexPoints:
 
                 self.coerce()
             case 'grid':
+                # XXX Doesn't take polarization strength into account, just fills the box with a grid of alternating signs. Maybe add some jitter to make it more realistic?
                 n_bunch = int(N/gridx/gridy)
                 sigma_x = D/gridx
                 sigma_y = D/gridy
@@ -423,6 +434,7 @@ class VortexPoints:
                         n += n_bunch
                 self.trim()
             case 'pairs':
+                # XXX Same comment as for 'grid'.
                 sigma = D/grid_div
                 npos = int(N/2)
                 nneg = npos
@@ -465,7 +477,8 @@ class VortexPoints:
         amplitude = self.probe_grid_v*np.cos(2*np.pi*self.probe_v_freq*self.t)
         n, k = self.probe_grid
         # Construct separable spatial dependence; scale by integer wave numbers
-        # so higher n/k produce finer spatial structure.
+        # so higher n and k produce finer spatial structure.
+        # XXX Why is it scaled with n and -k?
         spatial_x = n*np.cos(np.pi/self.D*n*self.xs)*np.cos(np.pi/self.D*k*self.ys)
         spatial_y = -k*np.sin(np.pi/self.D*n*self.xs)*np.sin(np.pi/self.D*k*self.ys)
         return amplitude*spatial_x, amplitude*spatial_y
@@ -486,6 +499,7 @@ class VortexPoints:
         convenience wrapper for quick visualization during debugging and
         for producing saved frames.
         """
+        # XXX Is this ever used?
         ixp = self.signs > 0
         ixn = self.signs < 0
         ax.scatter(self.xs[ixp], self.ys[ixp], color='r')
@@ -546,6 +560,7 @@ class VortexPoints:
             mf_vy = np.where(depinned, self.vy - alpha*self.vx*self.signs - alphap*self.vy, 0)
         elif self.pin_type == 'drag':
             # Use speed-dependent coefficients
+            # XXX I thought this would apply to all vortices, not only those above the threshold.
             mf_vx = np.where(depinned, self.vx + alpha_hat*self.vy*self.signs - alphap_hat*self.vx, 0)
             mf_vy = np.where(depinned, self.vy - alpha_hat*self.vx*self.signs - alphap_hat*self.vy, 0)
         elif self.pin_type == 'none':

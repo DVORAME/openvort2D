@@ -42,7 +42,7 @@ conditions, probe flows, injection of vortex pairs, restart from saved
 state, and saving of frames and restart snapshots.
 
 Typical usage (from project root):
-    python -m src.main --N 1000 --D 1e-2 --save --output output
+    python src.main --N 1000 --D 1e-2 --save --output output
 
 The script is lightweight: plotting is optional and uses `matplotlib`.
 """
@@ -169,6 +169,7 @@ if __name__ == '__main__':
             vp.check()
             vp.dissipation(alpha, alphap)
             vp.step(dt)
+            # TODO: Maybe switch order to eliminate one call of anihilate()?
             vp.annihilate()
             vp.check()
             vp.coerce()
