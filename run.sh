@@ -1,12 +1,12 @@
-#! /bin/bash
-
-#SBATCH -partition=gpu-ffa
+#!/bin/bash
+#SBATCH --partition=gpu-ffa
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=16G
-#SBATCH --gpus=1
+#SBATCH --gres=gpu:1
 #SBATCH --output=output_%j/log.txt
 #SBATCH --error=output_%j/err.txt
 #SBATCH --time=01:00:00
+#SBATCH --mail-user=86205591@cuni.cz
 
 
 alpha=0.061
