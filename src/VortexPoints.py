@@ -546,7 +546,7 @@ class VortexPoints:
 		inv_beta2 = v2/self.vpin**2
 		depinned = inv_beta2 > 1
 		# x = 1/Gamma for depinned vortices, zero otherwise
-		x = np.where(depinned, np.sqrt(inv_beta2 - 1), 0)
+		x = np.sqrt(np.where(depinned, inv_beta2 - 1, 0))
 		# Compute corrected mutual-friction coefficients used in 'drag' model
 		alpha_hat = x*(alpha**2 + alpha*x + alphap**2 - 2*alphap + 1)
 		alpha_hat /= (alpha**2 + 2*alpha*x + alphap**2 - 2*alphap + x**2 + 1)
