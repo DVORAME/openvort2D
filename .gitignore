@@ -5,7 +5,6 @@ L_t.txt
 *.npz
 output*
 video*
-*.ipynb
 *.avi
 ### Python ###
 # Byte-compiled / optimized / DLL files
