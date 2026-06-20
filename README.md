@@ -1,3 +1,5 @@
+-- This branch includes theoretical derivations of some formulae used in the simulation. Primarly use the `main` branch for practical uses. --
+
 This code simulates the motion of vortex points in superfluid 4He using the Taichi 
 language (https://www.taichi-lang.org/) for parallelization of the calculation.
 
