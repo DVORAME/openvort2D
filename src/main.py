@@ -80,6 +80,7 @@ if __name__ == '__main__':
 	parser.add_argument('--dt', type=float, default=1e-9, help='Time step used in the Euler integrator (s).')
 	parser.add_argument('--restart', action='store_true', help='Load the most recent restart (.npz) from output and continue.')
 	parser.add_argument('--walls', action='store_true', help='Enable reflecting horizontal walls (non-periodic in y).')
+	parser.add_argument('--circle', action='store_true', help='Enable reflecting circular boundary (non-periodic). Takes precedence over walls if both are specified.')
 	parser.add_argument('--pinning-v', type=float, default=0, help='Characteristic pinning velocity vpin used for depinning threshold models.')
 	parser.add_argument('--probe-v', type=float, default=0, help='Amplitude of uniform probe flow.')
 	parser.add_argument('--probe-v-freq', type=float, default=0, help='Frequency (Hz) of time-oscillation for probe flows.')
@@ -94,10 +95,12 @@ if __name__ == '__main__':
 						help="Fractional increase of save interval between frames. Positive => sparser saves over time.")
 	parser.add_argument('--tmax', type=float, default=None,
 						help="Maximum simulation time (seconds). If unspecified run until vortices annihilate.")
+	parser.add_argument('--omega', type=float, default=0, help='Angular rotation frequency (rad/s) for rotating resonator.')
 	args = parser.parse_args()
 	D = args.D
 	alpha = args.alpha
 	alphap = args.alphap
+	omega = args.omega
 	output = args.output
 	save = args.save
 
@@ -139,8 +142,8 @@ if __name__ == '__main__':
 	else:
 		# Create output directory for frames and restart files.
 		os.makedirs(output)    
-		vp = VortexPoints(args.N, D, polarization=args.polarization, polarization_type=args.polarization_type,
-						  walls=args.walls, vpin=args.pinning_v,
+		vp = VortexPoints(N=args.N, D=D, polarization=args.polarization, polarization_type=args.polarization_type,
+						  walls=args.walls, circle=args.circle, vpin=args.pinning_v,
 						  probe_v=args.probe_v, probe_v_freq=args.probe_v_freq,
 						  gridx=args.gridx, gridy=args.gridy, grid_div=args.grid_sigma_div,
 						  probe_type=args.probe_type, probe_grid=args.probe_grid, probe_grid_v=args.probe_grid_v)
@@ -167,7 +170,7 @@ if __name__ == '__main__':
 				# print("injecting")
 			vp.update_velocity()
 			vp.check()
-			vp.dissipation(alpha, alphap)
+			vp.dissipation(alpha, alphap, omega)
 			vp.step(dt)
 			# TODO: Maybe switch order to eliminate one call of anihilate()?
 			vp.annihilate()
