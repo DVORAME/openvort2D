@@ -202,7 +202,7 @@ if __name__ == '__main__':
 	save_countdown = 0
 	if not args.restart:
 		with open(os.path.join(output, 'info.txt'), 'w') as file:
-			file.write(f"{{N:{args.N},dt:{args.dt},tmax:{args.tmax},alpha:{args.alpha},alphap:{args.alphap},pinning_v:{args.pinning_v},pin_type:'{args.pin_type}',D:{args.D},walls:{args.walls},circle:{args.circle},omega:{args.omega},omega_lambda:{args.omega_lambda},polarization:{args.polarization},polarization_type:'{args.polarization_type}',gridx:{args.gridx},gridy:{args.gridy},grid_sigma_div:{args.grid_sigma_div},probe_v:{args.probe_v},probe_v_freq:{args.probe_v_freq},probe_type:'{args.probe_type}',probe_grid:({args.probe_grid[0]},{args.probe_grid[1]}),probe_grid_v:{args.probe_grid_v},inject:{args.inject}}}\n")
+			file.write(f"{{'N' : '{args.N}','dt' : '{args.dt}','tmax' : '{args.tmax}','alpha' : '{args.alpha}','alphap' : '{args.alphap}','pinning_v' : '{args.pinning_v}','pin_type' : '{args.pin_type}','D' : '{args.D}','walls' : '{args.walls}','circle' : '{args.circle}','omega' : '{args.omega}','omega_lambda' : '{args.omega_lambda}','polarization' : '{args.polarization}','polarization_type' : '{args.polarization_type}','gridx' : '{args.gridx}','gridy' : '{args.gridy}','grid_sigma_div' : '{args.grid_sigma_div}','probe_v' : '{args.probe_v}','probe_v_freq' : '{args.probe_v_freq}','probe_type' : '{args.probe_type}','probe_grid' : ({args.probe_grid[0]},{args.probe_grid[1]}),'probe_grid_v' : '{args.probe_grid_v}','inject' : '{args.inject}'}}\n")
 	with open(os.path.join(output, 'out.csv'), file_mode) as file:
 		if not args.restart:
 			file.write("it,t,N,L,phi,omega\n")
