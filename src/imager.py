@@ -4,6 +4,7 @@ import os
 import argparse
 from glob import glob
 import pandas as pd
+import ast
 
 from VortexPoints import VortexPoints
 
@@ -41,8 +42,10 @@ if __name__ == "__main__":
 	vp: VortexPoints = np.load(vp_files[0], allow_pickle=True)['arr_0'].item()
 
 	with open(os.path.join(input, 'info.txt')) as file:
-		info = dict(file.readline().strip())
-	out = pd.read_csv(os.path.join(input, 'out.csv'), sep=',', index_col=0, header=0)
+		s = file.readline().strip()
+		info = ast.literal_eval(s)
+	out = pd.read_csv(os.path.join(input, 'out.csv'), sep=',', header=0)
+	print(out)
 
 	circle = info.get('circle', False)
 	D = float(info.get('D'))
@@ -62,7 +65,7 @@ if __name__ == "__main__":
 	pos, = ax.plot(vp.xs[vp.signs > 0], vp.ys[vp.signs > 0], 'o', color='r', ms=2)
 	neg, = ax.plot(vp.xs[vp.signs < 0], vp.ys[vp.signs < 0], 'o', color='b', ms=2)
 
-	if args.plot_info:
+	if args.info:
 		info_text = ax.text(0.02, 0.98, '', transform=ax.transAxes, fontsize=10,
 								verticalalignment='top', horizontalalignment='left',
 								bbox=dict(facecolor='white', alpha=0.5, edgecolor='none'))
