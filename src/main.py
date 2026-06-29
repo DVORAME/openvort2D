@@ -234,24 +234,24 @@ if __name__ == '__main__':
 					handle.set_xdata([np.cos(phi)*D/2])
 					handle.set_ydata([np.sin(phi)*D/2])
 				if args.plot_info:
-					info_text.set_text(f"t = {vp.t:.6e} s\nN = {abs(vp.signs).sum()}\nL = {sum(vp.signs) * KAPPA:.6e} cm^2/s\nphi = {phi:.6e} rad\nomega = {omega:.6e} rad/s")
+					info_text.set_text(f"t = {vp.t:.6e} s\nN = {abs(vp.signs).sum()}\nL = {sum(vp.signs):d} kappa\nphi = {phi:.6e} rad\nomega = {omega:.6e} rad/s")
 			if not args.no_plot:
 				fig.canvas.draw()
 				fig.canvas.flush_events()
 				plt.pause(0.001)
 			N = abs(vp.signs).sum()
-			save_string = "{it:d},{t:.6e},{N:d},{L:.6e},{phi:.6e},{omega:.6e}\n".format(it=it, t=vp.t, N=N, L=sum(vp.signs) * KAPPA, phi=phi, omega=omega)
+			save_string = "{it:d},{t:.6e},{N:d},{L:.6e},{phi:.6e},{omega:.6e}\n".format(it=it, t=vp.t, N=N, L=sum(vp.signs), phi=phi, omega=omega)
 			print(save_string, end='')
 			# Save condition: write output, dump fig image and save a restart npz
-			if save_countdown == 0:
-				file.write(save_string)
-				file.flush()
 			if save_countdown == 0 and save:
 				if not args.no_plot_save:
 					fig.savefig(f'{output}/frame{frame:08d}.png')
 				frame += 1
 				np.savez(f'{output}/vp_{frame:08d}.npz', vp)
 				save_rate = save_rate*(1 + args.variable_save_rate)
+			if save_countdown == 0:
+				file.write(save_string)
+				file.flush()
 				save_countdown = int(save_rate)
 			if N == 0:
 				break
