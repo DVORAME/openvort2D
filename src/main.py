@@ -243,9 +243,10 @@ if __name__ == '__main__':
 			save_string = "{it:d},{t:.6e},{N:d},{L:.6e},{phi:.6e},{omega:.6e}\n".format(it=it, t=vp.t, N=N, L=sum(vp.signs) * KAPPA, phi=phi, omega=omega)
 			print(save_string, end='')
 			# Save condition: write output, dump fig image and save a restart npz
-			if save_countdown == 0 and save:
+			if save_countdown == 0:
 				file.write(save_string)
 				file.flush()
+			if save_countdown == 0 and save:
 				if not args.no_plot_save:
 					fig.savefig(f'{output}/frame{frame:08d}.png')
 				frame += 1
