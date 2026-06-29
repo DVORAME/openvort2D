@@ -80,8 +80,8 @@ if __name__ == '__main__':
 	parser.add_argument('--omega', type=float, default=0, help='Angular velocity (rad/s) for rotating resonator.')
 	parser.add_argument('--omega-lambda', type=str, default='', help="Angular velocity expressed in terms of time t, ie. '0.1*t' or 'np.sin(t)**2'. Overrides --omega if specified.")
 	
+	parser.add_argument('--polarization-type', type=str, default='none', help="Initial pattern type: 'none','skewed','jet','dipole','grid','pairs'.")
 	parser.add_argument('--polarization', type=float, default=0, help='Fraction or magnitude controlling polarized initial conditions.')
-	parser.add_argument('--polarization-type', type=str, default='none', help="Initial pattern type: 'none','jet','dipole','grid','pairs'.")
 	parser.add_argument('--gridx', type=int, help='Grid x-dimension for grid initializations.')
 	parser.add_argument('--gridy', type=int, help='Grid y-dimension for grid initializations.')
 	parser.add_argument('--grid-sigma-div', type=float, help='Standard deviation divisor for grid cluster spread.')
