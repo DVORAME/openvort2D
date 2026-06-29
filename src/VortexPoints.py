@@ -536,10 +536,14 @@ class VortexPoints:
 			case _:
 				raise ValueError(f"Unknown probe type {probe_type}")
 
-		# Currently doesn't support polarization for circular boundary, but could be added later if necessary.
 		match polarization_type:
 			case 'none':
 				pass
+			case 'skewed':
+				print(f"initializing polarized {polarization_type}, {polarization}")
+				npos = int(0.5*(polarization+1)*N)
+				self.signs[:npos] = +1
+				self.signs[npos:] = -1
 			case 'jet':
 				print(f"initializing polarized {polarization_type}, {polarization}")
 				npos = int(0.5*polarization*N)
