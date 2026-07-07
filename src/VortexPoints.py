@@ -462,34 +462,26 @@ def init_circle_positions(N, D):
 	y = ycache
 	if len(x) >= N:
 		xs += x[:N]
-	else:
-		xs[:len(x)] += x
-		xrest = N - len(x)
-		while xrest > 0:
-			x = rand(int(xrest * 4 / 3)) * D - radius
-			xcache = x[x**2 + y**2 < radius**2]
-			x = xcache
-			if len(x) >= xrest:
-				xs[len(xs) - xrest:] += x[:xrest]
-				break
-			else:
-				xs[len(xs) - xrest:len(xs) - xrest + len(x)] += x
-				xrest -= len(x)
-	if len(y) >= N:
 		ys += y[:N]
 	else:
+		xs[:len(x)] += x
 		ys[:len(y)] += y
-		yrest = N - len(y)
-		while yrest > 0:
-			y = rand(int(yrest * 4 / 3)) * D - radius
+		rest = N - len(x)
+		while rest > 0:
+			x = rand(int(rest * 4 / 3)) * D - radius
+			y = rand(int(rest * 4 / 3)) * D - radius
+			xcache = x[x**2 + y**2 < radius**2]
 			ycache = y[x**2 + y**2 < radius**2]
+			x = xcache
 			y = ycache
-			if len(y) >= yrest:
-				ys[len(ys) - yrest:] += y[:yrest]
+			if len(x) >= rest:
+				xs[len(xs) - rest:] += x[:rest]
+				ys[len(ys) - rest:] += y[:rest]
 				break
 			else:
-				ys[len(ys) - yrest:len(ys) - yrest + len(y)] += y
-				yrest -= len(y)
+				xs[len(xs) - rest:len(xs) - rest + len(x)] += x
+				ys[len(ys) - rest:len(ys) - rest + len(y)] += y
+				rest -= len(x)
 	
 	return xs, ys
 
@@ -716,6 +708,7 @@ class VortexPoints:
 		# x = 1/Gamma for depinned vortices, zero otherwise
 		x = np.sqrt(np.where(depinned, inv_beta2 - 1, 0))
 		# Compute corrected mutual-friction coefficients used in 'drag' model
+		# FIXME: ???
 		alpha_hat = x*(alpha**2 + alpha*x + alphap**2 - 2*alphap + 1)
 		alpha_hat /= (alpha**2 + 2*alpha*x + alphap**2 - 2*alphap + x**2 + 1)
 		alphap_hat = (alpha**2 + 2*alpha*x + alphap**2 + alphap*x**2 - 2*alphap + 1)
