@@ -129,6 +129,43 @@ def update_velocity_walls_ti(xs: TI_ARRAY, ys: TI_ARRAY, signs: TI_ARRAY,
 				vy[j] += KAPPA/2/PI/r2_jk*x_jk*signs[k]*mirror_flip
 
 @ti.kernel
+def update_velocity_circle_ti(xs: TI_ARRAY, ys: TI_ARRAY, signs: TI_ARRAY,
+							 vx: TI_ARRAY, vy: TI_ARRAY, D: ti.types.float64): # pyright: ignore[reportInvalidTypeForm]
+	"""Compute velocities with circular boundary conditions using mirror images.
+
+	This kernel enforces no-penetration at a circular boundary of radius D/2
+	by adding mirror vortices with flipped circulation (image method). The
+	mirror position is computed as the inversion of the original vortex
+	position with respect to the circle.
+	"""
+
+	N = xs.shape[0]
+	for j in range(N):
+		if signs[j] == 0:
+			continue
+		vx[j] = 0
+		vy[j] = 0
+		for k in range(N):
+			if signs[k] == 0 or j == k:
+				continue
+			x_jk = xs[j] - xs[k]
+			y_jk = ys[j] - ys[k]
+			r2_jk = x_jk**2 + y_jk**2
+			vx[j] += -KAPPA/2/PI/r2_jk*y_jk*signs[k]
+			vy[j] += KAPPA/2/PI/r2_jk*x_jk*signs[k]
+
+			# Mirror across circular boundary using inversion
+			r2_k = xs[k]**2 + ys[k]**2
+			if r2_k < (D/2)**2:
+				mirror_x = (D/2)**2 * xs[k] / r2_k
+				mirror_y = (D/2)**2 * ys[k] / r2_k
+				x_mirror_jk = xs[j] - mirror_x
+				y_mirror_jk = ys[j] - mirror_y
+				r2_mirror_jk = x_mirror_jk**2 + y_mirror_jk**2
+				vx[j] += -KAPPA/2/PI/r2_mirror_jk*y_mirror_jk*(-signs[k])
+				vy[j] += KAPPA/2/PI/r2_mirror_jk*x_mirror_jk*(-signs[k])
+
+@ti.kernel
 def calculate_velocity_walls_ti(vort_xs: TI_ARRAY, vort_ys: TI_ARRAY, signs: TI_ARRAY,
 								xs: TI_ARRAY, ys: TI_ARRAY,
 								vx: TI_ARRAY, vy: TI_ARRAY, D: ti.types.float64): # pyright: ignore[reportInvalidTypeForm]
@@ -342,22 +379,131 @@ def annihilate_walls_ti(xs: TI_ARRAY, ys: TI_ARRAY,
 			signs[k] = 0
 	return OK
 		
+@ti.kernel
+def annihilate_circle_ti(xs: TI_ARRAY, ys: TI_ARRAY, 
+						signs: TI_INT_ARRAY, D: float,
+						a0: float, to_annihilate: TI_ARRAY) -> int:
+	"""Annihilate vortex-antivortex pairs considering circular boundary.
+
+	Similar to `annihilate_ti`, but 
+	"""
+
+	N = xs.shape[0]
+
+	for j in range(N):
+		to_annihilate[j] = 0
+
+	for j in range(N):
+		if signs[j] == 0:
+			continue
+		for k in range(j+1, N):
+			if signs[k] == 0 or signs[j] == signs[k]:
+				continue
+			x_jk = xs[k] - xs[j]
+			y_jk = ys[k] - ys[j]
+			r2_jk = x_jk**2 + y_jk**2
+			if r2_jk < a0**2:
+				to_annihilate[j] += 1
+				to_annihilate[k] += 1
+				break
+	
+	#XXX Couldn't this be done with np.max or similar? How much does taichi hate that?
+	OK = True
+	for j in range(N):
+		if to_annihilate[j] > 1:
+			OK = False
+
+	if OK:
+		for j in range(N):
+			if to_annihilate[j] > 0:
+				signs[j] = 0
+	else:
+		ti.loop_config(serialize=True)
+		for j in range(N):
+			if signs[j] == 0:
+				continue
+			for k in range(N):
+				if k == j:
+					continue
+				if signs[k] == 0 or signs[j] == signs[k]:
+					continue
+				x_jk = xs[k] - xs[j]
+				y_jk = ys[k] - ys[j]
+				r2_jk = x_jk**2 + y_jk**2
+				if r2_jk < a0**2:
+					signs[j] = 0
+					signs[k] = 0
+					break
+	
+	# Now annihilate vortices that hit the physical circular boundary
+	for k in range(N):
+		if signs[k] == 0:
+			continue
+		r2 = xs[k]**2 + ys[k]**2
+		if r2 > (D/2 - a0)**2:
+			signs[k] = 0
+	
+	return OK
+
+def init_circle_positions(N, D):
+	"""Initialize N vortices randomly inside a circle of radius D/2.
+
+	Positions are uniformly distributed within the circular area.
+	"""
+	radius = D / 2
+	xs = np.zeros(N)
+	ys = np.zeros(N)
+
+	x = rand(int(N * 4 / 3)) * D - radius
+	y = rand(int(N * 4 / 3)) * D - radius
+	xcache = x[x**2 + y**2 < radius**2]
+	ycache = y[x**2 + y**2 < radius**2]
+	x = xcache
+	y = ycache
+	if len(x) >= N:
+		xs += x[:N]
+		ys += y[:N]
+	else:
+		xs[:len(x)] += x
+		ys[:len(y)] += y
+		rest = N - len(x)
+		while rest > 0:
+			x = rand(int(rest * 4 / 3)) * D - radius
+			y = rand(int(rest * 4 / 3)) * D - radius
+			xcache = x[x**2 + y**2 < radius**2]
+			ycache = y[x**2 + y**2 < radius**2]
+			x = xcache
+			y = ycache
+			if len(x) >= rest:
+				xs[len(xs) - rest:] += x[:rest]
+				ys[len(ys) - rest:] += y[:rest]
+				break
+			else:
+				xs[len(xs) - rest:len(xs) - rest + len(x)] += x
+				ys[len(ys) - rest:len(ys) - rest + len(y)] += y
+				rest -= len(x)
+	
+	return xs, ys
 
 class VortexPoints:
 	def __init__(self, N:int|None=None, D:float=1, a0:float=1e-5,
 				 polarization:float=0, polarization_type:str='none',
-				 walls:bool=False, vpin:float=0, pin_type='threshold',
+				 walls:bool=False, circle:bool=False, vpin:float=0, pin_type='threshold',
 				 probe_type:str = 'uniform', probe_v:float=0, probe_v_freq:float=0,
 				 probe_grid=None, probe_grid_v=0,
 				 gridx=None, gridy=None, grid_div=None):
 		self.walls = walls
+		self.circle = circle
+		if walls and circle:
+			print("Warning: both walls and circle boundary conditions specified. Circle will take precedence.")
 		self.a0 = a0 # annihilation distance, in cm
 		self.N = N
 		self.D = D
-		self.xs = np.zeros(N)
-		self.ys = np.zeros(N)
-		self.xs += rand(N)*D
-		self.ys += rand(N)*D
+		if circle:
+			self.xs, self.ys = init_circle_positions(N, D)
+		else:
+			self.xs = rand(N)*D
+			self.ys = rand(N)*D
 		self.vx = np.zeros_like(self.xs)
 		self.vy = np.zeros_like(self.ys)
 		self.signs = np.ones(N, dtype=int)
@@ -371,6 +517,7 @@ class VortexPoints:
 		self.probe_grid = probe_grid
 		self.probe_grid_v = probe_grid_v
 
+		# TODO: Add option viable for circular boundary
 		match probe_type:
 			case 'uniform':
 				self._probe_v = self.uniform_probe_v
@@ -384,6 +531,11 @@ class VortexPoints:
 		match polarization_type:
 			case 'none':
 				pass
+			case 'skewed':
+				print(f"initializing polarized {polarization_type}, {polarization}")
+				npos = int(0.5*(polarization+1)*N)
+				self.signs[:npos] = +1
+				self.signs[npos:] = -1
 			case 'jet':
 				print(f"initializing polarized {polarization_type}, {polarization}")
 				npos = int(0.5*polarization*N)
@@ -512,7 +664,10 @@ class VortexPoints:
 		the `self.vx`/`self.vy` arrays which are then augmented by the
 		chosen probe flow (if any).
 		"""
-		if self.walls:
+		if self.circle:
+			# Use image/circle kernel for reflecting circular boundaries
+			update_velocity_circle_ti(self.xs, self.ys, self.signs, self.vx, self.vy, self.D)
+		elif self.walls:
 			# Use image/wall kernel for reflecting horizontal boundaries
 			update_velocity_walls_ti(self.xs, self.ys, self.signs, self.vx, self.vy, self.D)
 		else:
@@ -524,7 +679,7 @@ class VortexPoints:
 		self.vx += probe_vx
 		self.vy += probe_vy
 	
-	def dissipation(self, alpha=0.1, alphap=0):
+	def dissipation(self, alpha=0.1, alphap=0, omega=0):
 		"""Apply a mutual-friction / pinning model to vortex velocities.
 
 		The model implements three behaviors controlled by `self.pin_type`:
@@ -541,6 +696,11 @@ class VortexPoints:
 		  3. compute corrected coefficients for drag model when needed
 		  4. build new velocities according to selected pin model
 		"""
+
+		# Translate velocities to local frames moving on tangent to the rotation of walls
+		self.vx += omega*self.ys
+		self.vy -= omega*self.xs
+
 		v2 = self.vx**2 + self.vy**2
 		# avoid division by zero when vpin==0: inv_beta2 will be inf or nan
 		inv_beta2 = v2/self.vpin**2
@@ -548,6 +708,7 @@ class VortexPoints:
 		# x = 1/Gamma for depinned vortices, zero otherwise
 		x = np.sqrt(np.where(depinned, inv_beta2 - 1, 0))
 		# Compute corrected mutual-friction coefficients used in 'drag' model
+		# FIXME: ???
 		alpha_hat = x*(alpha**2 + alpha*x + alphap**2 - 2*alphap + 1)
 		alpha_hat /= (alpha**2 + 2*alpha*x + alphap**2 - 2*alphap + x**2 + 1)
 		alphap_hat = (alpha**2 + 2*alpha*x + alphap**2 + alphap*x**2 - 2*alphap + 1)
@@ -559,7 +720,6 @@ class VortexPoints:
 			mf_vy = np.where(depinned, self.vy - alpha*self.vx*self.signs - alphap*self.vy, 0)
 		elif self.pin_type == 'drag':
 			# Use speed-dependent coefficients
-			# XXX I thought this would apply to all vortices, not only those above the threshold.
 			mf_vx = np.where(depinned, self.vx + alpha_hat*self.vy*self.signs - alphap_hat*self.vx, 0)
 			mf_vy = np.where(depinned, self.vy - alpha_hat*self.vx*self.signs - alphap_hat*self.vy, 0)
 		elif self.pin_type == 'none':
@@ -572,6 +732,10 @@ class VortexPoints:
 		# Update velocities in-place
 		self.vx = mf_vx
 		self.vy = mf_vy
+
+		## Translate velocities back to the lab frame
+		self.vx -= omega*self.ys
+		self.vy += omega*self.xs
 	
 	def annihilate(self):
 		"""Run the appropriate annihilation kernel depending on BCs.
@@ -580,7 +744,9 @@ class VortexPoints:
 		`self.a0`. For wall boundary conditions, additional checks remove
 		vortices that collide with the boundaries.
 		"""
-		if self.walls:
+		if self.circle:
+			annihilate_circle_ti(self.xs, self.ys, self.signs, self.D, self.a0, self.to_annihilate)
+		elif self.walls:
 			annihilate_walls_ti(self.xs, self.ys, self.signs, self.shifts, self.a0, self.to_annihilate)
 		else:
 			annihilate_ti(self.xs, self.ys, self.signs, self.shifts, self.a0, self.to_annihilate)
@@ -660,6 +826,9 @@ class VortexPoints:
 		# The loop repeats until no coordinate lies outside the interval; this
 		# handles large displacements but typically completes in one pass.
 
+		if self.circle:
+			return  # No coercion needed for circular boundary; points outside boundary are annihilated instead.
+
 		while True:
 			coerced = 0
 			for j in range(self.N):
@@ -709,7 +878,7 @@ class VortexPoints:
 		# conserved and initially zero if the initialization used equal
 		# positive/negative counts. This sanity-check raises if net vorticity
 		# is nonzero, helping detect bugs in annihilation or initialization.
-		if not self.walls:
+		if not self.walls and not self.circle:
 			v = sum(self.signs)
 			if abs(v) > 0:
 				raise RuntimeError("nonzero vorticity")
