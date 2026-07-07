@@ -115,7 +115,10 @@ if __name__ == '__main__':
 	if calculate_omega:
 		# If omega is specified as a function of time, define a lambda function to evaluate it.
 		omega_func = eval(f"lambda t: {args.omega_lambda}")
-		omega = omega_func(0)
+		try:
+			omega = omega_func(0)
+		except NameError:
+			omega = 0
 	else:
 		omega = args.omega
 	output = args.output
