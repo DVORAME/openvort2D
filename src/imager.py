@@ -45,7 +45,6 @@ if __name__ == "__main__":
 		s = file.readline().strip()
 		info = ast.literal_eval(s)
 	out = pd.read_csv(os.path.join(input, 'out.csv'), sep=',', header=0)
-	print(out)
 
 	circle = info.get('circle', False)
 	D = float(info.get('D'))
@@ -88,7 +87,7 @@ if __name__ == "__main__":
 			handle.set_xdata([np.cos(out['phi'][i])*D/2])
 			handle.set_ydata([np.sin(out['phi'][i])*D/2])
 		if args.info:
-			info_text.set_text(f"t = {vp.t:.6e} s\nN = {abs(vp.signs).sum()}\nL = {sum(vp.signs) * KAPPA:.6e} cm^2/s\nphi = {out['phi'][i]:.6e} rad\nomega = {out['omega'][i]:.6e} rad/s")
+			info_text.set_text(f"t = {vp.t:.6e} s\nN = {abs(vp.signs).sum():d}\nL = {sum(vp.signs):d} kappa\nphi = {out['phi'][i]:.6e} rad\nomega = {out['omega'][i]:.6e} rad/s")
 		if args.show:
 			fig.canvas.draw()
 			fig.canvas.flush_events()
