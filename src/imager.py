@@ -37,7 +37,7 @@ if __name__ == "__main__":
 				suffix_k += 1
 		os.makedirs(output)
 	
-	vp_files = glob(os.path.join(output, '*.npz'))
+	vp_files = glob(os.path.join(input, '*.npz'))
 	vp_files.sort()
 	vp: VortexPoints = np.load(vp_files[0], allow_pickle=True)['arr_0'].item()
 
