@@ -19,6 +19,7 @@ if __name__ == "__main__":
 	parser.add_argument("--save", action="store_true", help="Save the plots as image files.")
 	parser.add_argument("--info", action="store_true", help="Add information to the plot.")
 	parser.add_argument("--dpi", type=int, default=300, help="DPI for saved images. Default is 300.")
+	parser.add_argument("--plot-pause-time", type=float, default=0.001, help="Pause time (seconds) between plot updates for interactive visualization.")
 
 	args = parser.parse_args()
 
@@ -91,7 +92,8 @@ if __name__ == "__main__":
 		if args.show:
 			fig.canvas.draw()
 			fig.canvas.flush_events()
-			plt.pause(0.001)
+			if args.plot_pause_time > 0:
+				plt.pause(args.plot_pause_time)
 		if args.save:
 			fig.savefig(os.path.join(output, f"frame_{i:08d}.png"), dpi=args.dpi)
 
