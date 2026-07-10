@@ -71,6 +71,7 @@ if __name__ == '__main__':
 	parser.add_argument('--alpha', type=float, default=0.03, help='Mutual friction coefficient alpha.')
 	parser.add_argument('--alphap', type=float, default=1.76e-2, help="Mutual friction coefficient alpha' (prime).")
 	parser.add_argument('--pinning-v', type=float, default=0, help='Characteristic pinning velocity vpin used for depinning threshold models.')
+	parser.add_argument('--pinning-v-ex', type=str, default='', help="Pinning velocity as an expression. Overrides --pinning-v if specified.")
 	parser.add_argument('--pin-type', type=str, default='threshold', 
 						help="Pinning/dissipation model: 'threshold' (no motion below vpin), 'drag' (continuous drag), 'none'.")
 	
@@ -78,7 +79,7 @@ if __name__ == '__main__':
 	parser.add_argument('--walls', action='store_true', help='Enable reflecting horizontal walls (non-periodic in y).')
 	parser.add_argument('--circle', action='store_true', help='Enable reflecting circular boundary (non-periodic). Takes precedence over walls if both are specified.')
 	parser.add_argument('--omega', type=float, default=0, help='Angular velocity (rad/s) for rotating resonator.')
-	parser.add_argument('--omega-lambda', type=str, default='', help="Angular velocity expressed in terms of time t, ie. '0.1*t' or 'np.sin(t)**2'. Overrides --omega if specified.")
+	parser.add_argument('--omega-ex', type=str, default='', help="Angular velocity expressed in terms of time t, ie. '0.1*t' or 'np.sin(t)**2'. Overrides --omega if specified.")
 	
 	parser.add_argument('--polarization-type', type=str, default='none', help="Initial pattern type: 'none','skewed','jet','dipole','grid','pairs'.")
 	parser.add_argument('--polarization', type=float, default=0, help='Fraction or magnitude controlling polarized initial conditions.')
@@ -102,6 +103,7 @@ if __name__ == '__main__':
 	parser.add_argument('--no-plot', action='store_true', help='Disable interactive plotting (recommended for headless runs).')
 	parser.add_argument('--no-plot-save', action='store_true', help='Disable saving of plot frames (only save restart files).')
 	parser.add_argument('--plot-info', action='store_true', help='Enable overlay of simulation info on plot frames (t, N, L, phi, omega).')
+	parser.add_argument('--plot-pause-time', type=float, default=0.001, help='Pause time (seconds) between plot updates for interactive visualization.')
 	parser.add_argument('--output', type=str, default='output', help='Directory to write frames, logs, and restart files.')
 	
 	parser.add_argument('--gpu', action='store_true', help='Attempt to run Taichi on GPU instead of CPU.')
@@ -111,10 +113,10 @@ if __name__ == '__main__':
 	D = args.D
 	alpha = args.alpha
 	alphap = args.alphap
-	calculate_omega = args.omega_lambda != ''
+	calculate_omega = args.omega_ex != ''
 	if calculate_omega:
 		# If omega is specified as a function of time, define a lambda function to evaluate it.
-		omega_func = eval(f"lambda t: {args.omega_lambda}")
+		omega_func = eval(f"lambda t: {args.omega_ex}")
 		try:
 			omega = omega_func(0)
 		except NameError:
@@ -123,6 +125,9 @@ if __name__ == '__main__':
 		omega = args.omega
 	output = args.output
 	save = args.save
+	vpin = args.pinning_v
+	if args.pinning_v_ex != '':
+		vpin = eval(args.pinning_v_ex)
 
 	if args.tmax is not None:
 		if args.tmax <= 0:
@@ -162,7 +167,7 @@ if __name__ == '__main__':
 		# Create output directory for frames and restart files.
 		os.makedirs(output)    
 		vp = VortexPoints(N=args.N, D=D, polarization=args.polarization, polarization_type=args.polarization_type,
-						  walls=args.walls, circle=args.circle, vpin=args.pinning_v,
+						  walls=args.walls, circle=args.circle, vpin=vpin, pin_type=args.pin_type,
 						  probe_v=args.probe_v, probe_v_freq=args.probe_v_freq,
 						  gridx=args.gridx, gridy=args.gridy, grid_div=args.grid_sigma_div,
 						  probe_type=args.probe_type, probe_grid=args.probe_grid, probe_grid_v=args.probe_grid_v)
@@ -205,7 +210,7 @@ if __name__ == '__main__':
 	save_countdown = 0
 	if not args.restart:
 		with open(os.path.join(output, 'info.txt'), 'w') as file:
-			file.write(f"{{'N' : '{args.N}','dt' : '{args.dt}','tmax' : '{args.tmax}','alpha' : '{args.alpha}','alphap' : '{args.alphap}','pinning_v' : '{args.pinning_v}','pin_type' : '{args.pin_type}','D' : '{args.D}','walls' : '{args.walls}','circle' : '{args.circle}','omega' : '{args.omega}','omega_lambda' : '{args.omega_lambda}','polarization' : '{args.polarization}','polarization_type' : '{args.polarization_type}','gridx' : '{args.gridx}','gridy' : '{args.gridy}','grid_sigma_div' : '{args.grid_sigma_div}','probe_v' : '{args.probe_v}','probe_v_freq' : '{args.probe_v_freq}','probe_type' : '{args.probe_type}','probe_grid' : ({args.probe_grid[0]},{args.probe_grid[1]}),'probe_grid_v' : '{args.probe_grid_v}','inject' : '{args.inject}'}}\n")
+			file.write(f"{{'N' : '{args.N}','dt' : '{args.dt}','tmax' : '{args.tmax}','alpha' : '{args.alpha}','alphap' : '{args.alphap}','pinning_v' : '{args.pinning_v}','pinning_v_ex' : '{args.pinning_v_ex}','pin_type' : '{args.pin_type}','D' : '{args.D}','walls' : '{args.walls}','circle' : '{args.circle}','omega' : '{args.omega}','omega_ex' : '{args.omega_ex}','polarization' : '{args.polarization}','polarization_type' : '{args.polarization_type}','gridx' : '{args.gridx}','gridy' : '{args.gridy}','grid_sigma_div' : '{args.grid_sigma_div}','probe_v' : '{args.probe_v}','probe_v_freq' : '{args.probe_v_freq}','probe_type' : '{args.probe_type}','probe_grid' : ({args.probe_grid[0]},{args.probe_grid[1]}),'probe_grid_v' : '{args.probe_grid_v}','inject' : '{args.inject}'}}\n")
 	with open(os.path.join(output, 'out.csv'), file_mode) as file:
 		if not args.restart:
 			file.write("it,t,N,L,phi,omega\n")
@@ -241,10 +246,10 @@ if __name__ == '__main__':
 			if not args.no_plot:
 				fig.canvas.draw()
 				fig.canvas.flush_events()
-				plt.pause(0.001)
+				if args.plot_pause_time > 0:
+					plt.pause(args.plot_pause_time)
 			N = abs(vp.signs).sum()
-			save_string = "{it:d},{t:.6e},{N:d},{L:.6e},{phi:.6e},{omega:.6e}\n".format(it=it, t=vp.t, N=N, L=sum(vp.signs), phi=phi, omega=omega)
-			print(save_string, end='')
+			# print(save_string, end='')
 			# Save condition: write output, dump fig image and save a restart npz
 			if save_countdown == 0 and save:
 				if not args.no_plot_save:
@@ -253,6 +258,7 @@ if __name__ == '__main__':
 				np.savez(f'{output}/vp_{frame:08d}.npz', vp)
 				save_rate = save_rate*(1 + args.variable_save_rate)
 			if save_countdown == 0:
+				save_string = "{it:d},{t:.6e},{N:d},{L:.6e},{phi:.6e},{omega:.6e}\n".format(it=it, t=vp.t, N=N, L=sum(vp.signs), phi=phi, omega=omega)
 				file.write(save_string)
 				file.flush()
 				save_countdown = int(save_rate)
