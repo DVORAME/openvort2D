@@ -215,16 +215,21 @@ if __name__ == '__main__':
 		if not args.restart:
 			file.write("it,t,N,L,phi,omega\n")
 		while True:
+			# tic = time.time()
 			if args.inject and vp.t - last_inject > 0.0005:
 				vp.inject(5)
 				vp.annihilate()
 				vp.check()
 				last_inject = vp.t
 				# print("injecting")
+			# tac = time.time()
 			vp.update_velocity()
+			# toc = time.time()
 			vp.check()
 			vp.dissipation(alpha, alphap, omega)
+			# tuc = time.time()
 			vp.step(dt)
+			# tyc = time.time()
 			if calculate_omega:
 				omega = omega_func(vp.t)
 			phi += omega*dt
@@ -232,6 +237,7 @@ if __name__ == '__main__':
 			vp.annihilate()
 			vp.check()
 			vp.coerce()
+			# twc = time.time()
 
 			if draw:
 				pos.set_xdata(vp.xs[vp.signs > 0])
@@ -269,3 +275,14 @@ if __name__ == '__main__':
 				break
 			it += 1
 			save_countdown -= 1
+			
+			# tqc = time.time()
+			# print('Benchmarks: inject = {:.3f} ms, update_velocity = {:.3f} ms, dissipation = {:.3f} ms, step = {:.3f} ms, rest = {:.3f} ms, save = {:.3f} ms, total = {:.3f} ms'.format(
+			# 	(tac - tic) * 1000,
+			# 	(toc - tac) * 1000,
+			# 	(tuc - toc) * 1000,
+			# 	(tyc - tuc) * 1000,
+			# 	(twc - tyc) * 1000,
+			# 	(tqc - twc) * 1000,
+			# 	(tqc - tic) * 1000
+			# ))
