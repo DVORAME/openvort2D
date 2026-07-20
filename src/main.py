@@ -108,7 +108,8 @@ if __name__ == '__main__':
 	
 	parser.add_argument('--gpu', action='store_true', help='Attempt to run Taichi on GPU instead of CPU.')
 	parser.add_argument('--restart', action='store_true', help='Load the most recent restart (.npz) from output and continue.')
-	
+	parser.add_argument('--load', action='store_true', help='Load the restart (.npz) from output as initial state.')
+
 	args = parser.parse_args()
 	D = args.D
 	alpha = args.alpha
@@ -155,6 +156,32 @@ if __name__ == '__main__':
 			vp.step_n = 0
 		file_mode = 'a'
 		frame = len(vp_files)
+	elif args.load:
+		vp_files = glob(path.join(output, '*.npz'))
+		vp_files.sort()
+		print(len(vp_files))
+		restart_file = np.load(vp_files[-1], allow_pickle=True)
+		vp = restart_file['arr_0'].item()
+		vp.step_n = 0
+		vp.t = 0
+		vp.vpin = vpin
+		vp.pin_type = args.pin_type
+		vp.probe_type = args.probe_type
+		vp.probe_v = args.probe_v
+		vp.probe_v_freq = args.probe_v_freq
+		vp.probe_grid = args.probe_grid
+		vp.probe_grid_v = args.probe_grid_v
+		match args.probe_type:
+			case 'uniform':
+				vp._probe_v = vp.uniform_probe_v
+			case 'grid':
+				vp._probe_v = vp.grid_probe_v
+			case 'combined':
+				vp._probe_v = vp.combined_probe_v
+			case _:
+				raise ValueError(f"Unknown probe type {args.probe_type}")
+		file_mode = 'w'
+		frame = 0
 	else:
 		base_output = output
 		suffix_k = 1
@@ -210,7 +237,7 @@ if __name__ == '__main__':
 	save_countdown = 0
 	if not args.restart:
 		with open(os.path.join(output, 'info.txt'), 'w') as file:
-			file.write(f"{{'N' : '{args.N}','dt' : '{args.dt}','tmax' : '{args.tmax}','alpha' : '{args.alpha}','alphap' : '{args.alphap}','pinning_v' : '{args.pinning_v}','pinning_v_ex' : '{args.pinning_v_ex}','pin_type' : '{args.pin_type}','D' : '{args.D}','walls' : '{args.walls}','circle' : '{args.circle}','omega' : '{args.omega}','omega_ex' : '{args.omega_ex}','polarization' : '{args.polarization}','polarization_type' : '{args.polarization_type}','gridx' : '{args.gridx}','gridy' : '{args.gridy}','grid_sigma_div' : '{args.grid_sigma_div}','probe_v' : '{args.probe_v}','probe_v_freq' : '{args.probe_v_freq}','probe_type' : '{args.probe_type}','probe_grid' : ({args.probe_grid[0]},{args.probe_grid[1]}),'probe_grid_v' : '{args.probe_grid_v}','inject' : '{args.inject}'}}\n")
+			file.write(f"{{'N' : '{args.N}','dt' : '{args.dt}','tmax' : '{args.tmax}','alpha' : '{args.alpha}','alphap' : '{args.alphap}','pinning_v' : '{vpin}','pinning_v_ex' : '{args.pinning_v_ex}','pin_type' : '{args.pin_type}','D' : '{args.D}','walls' : '{args.walls}','circle' : '{args.circle}','omega' : '{args.omega}','omega_ex' : '{args.omega_ex}','polarization' : '{args.polarization}','polarization_type' : '{args.polarization_type}','gridx' : '{args.gridx}','gridy' : '{args.gridy}','grid_sigma_div' : '{args.grid_sigma_div}','probe_v' : '{args.probe_v}','probe_v_freq' : '{args.probe_v_freq}','probe_type' : '{args.probe_type}','probe_grid' : ({args.probe_grid[0]},{args.probe_grid[1]}),'probe_grid_v' : '{args.probe_grid_v}','inject' : '{args.inject}'}}\n")
 	with open(os.path.join(output, 'out.csv'), file_mode) as file:
 		if not args.restart:
 			file.write("it,t,N,L,phi,omega\n")
