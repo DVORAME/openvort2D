@@ -19,6 +19,7 @@ if __name__ == "__main__":
 	parser.add_argument("--save", action="store_true", help="Save the plots as image files.")
 	parser.add_argument("--info", action="store_true", help="Add information to the plot.")
 	parser.add_argument("--dpi", type=int, default=300, help="DPI for saved images. Default is 300.")
+	parser.add_argument("--plot-pause-time", type=float, default=0.001, help="Pause time (seconds) between plot updates for interactive visualization.")
 
 	args = parser.parse_args()
 
@@ -37,7 +38,7 @@ if __name__ == "__main__":
 				suffix_k += 1
 		os.makedirs(output)
 	
-	vp_files = glob(os.path.join(output, '*.npz'))
+	vp_files = glob(os.path.join(input, '*.npz'))
 	vp_files.sort()
 	vp: VortexPoints = np.load(vp_files[0], allow_pickle=True)['arr_0'].item()
 
@@ -45,7 +46,6 @@ if __name__ == "__main__":
 		s = file.readline().strip()
 		info = ast.literal_eval(s)
 	out = pd.read_csv(os.path.join(input, 'out.csv'), sep=',', header=0)
-	print(out)
 
 	circle = info.get('circle', False)
 	D = float(info.get('D'))
@@ -88,11 +88,12 @@ if __name__ == "__main__":
 			handle.set_xdata([np.cos(out['phi'][i])*D/2])
 			handle.set_ydata([np.sin(out['phi'][i])*D/2])
 		if args.info:
-			info_text.set_text(f"t = {vp.t:.6e} s\nN = {abs(vp.signs).sum()}\nL = {sum(vp.signs) * KAPPA:.6e} cm^2/s\nphi = {out['phi'][i]:.6e} rad\nomega = {out['omega'][i]:.6e} rad/s")
+			info_text.set_text(f"t = {vp.t:.6e} s\nN = {abs(vp.signs).sum():d}\nL = {sum(vp.signs):d} kappa\nphi = {out['phi'][i]:.6e} rad\nomega = {out['omega'][i]:.6e} rad/s")
 		if args.show:
 			fig.canvas.draw()
 			fig.canvas.flush_events()
-			plt.pause(0.001)
+			if args.plot_pause_time > 0:
+				plt.pause(args.plot_pause_time)
 		if args.save:
 			fig.savefig(os.path.join(output, f"frame_{i:08d}.png"), dpi=args.dpi)
 
