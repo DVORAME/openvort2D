@@ -241,6 +241,10 @@ if __name__ == '__main__':
 	with open(os.path.join(output, 'out.csv'), file_mode) as file:
 		if not args.restart:
 			file.write("it,t,N,L,phi,omega\n")
+		if args.load:
+			save_string = "{it:d},{t:.6e},{N:d},{L:.6e},{phi:.6e},{omega:.6e}\n".format(it=it, t=vp.t, N=abs(vp.signs).sum(), L=sum(vp.signs), phi=phi, omega=omega)
+			file.write(save_string)
+			file.flush()
 		while True:
 			# tic = time.time()
 			if args.inject and vp.t - last_inject > 0.0005:
