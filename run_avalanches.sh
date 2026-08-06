@@ -7,7 +7,6 @@
 #SBATCH --job-name=openvort_avalanches
 #SBATCH --output=slurm-%x-%A_%a.out
 #SBATCH --error=slurm-%x-%A_%a.err
-#SBATCH --array=1-5
 
 set -euo pipefail
 
@@ -32,7 +31,7 @@ AVALANCHE_ROOT="${AVALANCHE_ROOT:-output_avalanches}"
 SPINDOWN_RATE_FACTORS=(${SPINDOWN_RATE_FACTORS:-1 2 3 4 5})
 
 TASK_ID="${SLURM_ARRAY_TASK_ID:-1}"
-TOTAL_TASKS="${#SPINDOWN_RATE_FACTORS[@]}"
+TOTAL_TASKS="${TOTAL_TASKS:-${#SPINDOWN_RATE_FACTORS[@]}}"
 
 if (( TASK_ID < 1 || TASK_ID > TOTAL_TASKS )); then
 	echo "ERROR: task id ${TASK_ID} is out of range 1..${TOTAL_TASKS}"
@@ -94,7 +93,7 @@ fi
 RATE_FACTOR="${SPINDOWN_RATE_FACTORS[$((TASK_ID - 1))]}"
 TASK_OUTPUT_DIR="${AVALANCHE_ROOT}/output_${TASK_ID}"
 
-OMEGA_EXPRESSION="2*${N}*KAPPA/np.pi/D**2*(1-2*${N}*KAPPA/np.pi/D**2*t/${SPINDOWN_BASE_TIME}/${RATE_FACTOR}/2/np.pi)"
+OMEGA_EXPRESSION=${OMEGA_EXPRESSION:-2*${N}*KAPPA/np.pi/D**2*(1-2*${N}*KAPPA/np.pi/D**2*t/${SPINDOWN_BASE_TIME}/${RATE_FACTOR}/2/np.pi)}
 PINNING_V_EXPRESSION="${PINNING_V_EXPRESSION:-${N}*KAPPA/D/np.pi/500*3}"
 
 echo "[$(date)] Running avalanche task ${TASK_ID}/${TOTAL_TASKS}"

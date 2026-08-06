@@ -35,8 +35,8 @@ echo "[$(date)] Creating frames in '/scratch/tmp/openvort_video_${SLURM_JOB_ID}'
 "${CMD_FRAMES[@]}"
 
 CMD_VIDEO=(
-	ffmpeg -y -framerate "${FRAMERATE}" -i "/scratch/tmp/openvort_video_${SLURM_JOB_ID}/frame_%08d.png"
-	-c:v libx264 -pix_fmt yuv420p "${OUTPUT_DIR}/${FILE_NAME}"
+	ffmpeg -framerate "${FRAMERATE}" -i "/scratch/tmp/openvort_video_${SLURM_JOB_ID}/frame_%08d.png" \
+	-c:v h264 -pix_fmt yuv420p "${OUTPUT_DIR}/${FILE_NAME}"
 )
 
 echo "[$(date)] Creating video '${OUTPUT_DIR}/${FILE_NAME}' from frames in '/scratch/tmp/openvort_video_${SLURM_JOB_ID}'"
