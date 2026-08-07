@@ -7,7 +7,7 @@
 #SBATCH --job-name=openvort_avalanches
 #SBATCH --output=slurm-%x-%A_%a.out
 #SBATCH --error=slurm-%x-%A_%a.err
-#SBATCH --array=1-${TOTAL_TASKS:-1}
+#SBATCH --array=1-10
 
 set -euo pipefail
 
@@ -22,6 +22,8 @@ PIN_TYPE="${PIN_TYPE:-drag}"
 POLARIZATION_TYPE="${POLARIZATION_TYPE:-skewed}"
 POLARIZATION="${POLARIZATION:-1}"
 SAVE_EVERY="${SAVE_EVERY:-1000}"
+OMEGA_EXPRESSION=${OMEGA_EXPRESSION:-2*${N}*KAPPA/np.pi/D**2*(1-t/${TMAX})}
+PINNING_V_EXPRESSION="${PINNING_V_EXPRESSION:-0}"
 USE_GPU="${USE_GPU:-1}"
 
 PREP_OUTPUT_DIR="${PREP_OUTPUT_DIR:-output_prep_lattice}"
@@ -89,11 +91,9 @@ fi
 
 TASK_OUTPUT_DIR="${AVALANCHE_ROOT}/output_${TASK_ID}"
 
-OMEGA_EXPRESSION=${OMEGA_EXPRESSION:-2*${N}*KAPPA/np.pi/D**2*(1-t/${TMAX})}
-PINNING_V_EXPRESSION="${PINNING_V_EXPRESSION:-0}"
 
 echo "[$(date)] Running avalanche task ${TASK_ID}/${TOTAL_TASKS}"
-echo "prep='${PREP_OUTPUT_DIR}', restart='${SOURCE_RESTART_FILE}', output='${TASK_OUTPUT_DIR}', rate_factor=${RATE_FACTOR}"
+echo "prep='${PREP_OUTPUT_DIR}', restart='${SOURCE_RESTART_FILE}', output='${TASK_OUTPUT_DIR}' task_id=${TASK_ID}"
 
 CMD=(
 	pyenv exec python src/main.py

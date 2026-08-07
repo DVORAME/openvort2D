@@ -109,7 +109,7 @@ if __name__ == '__main__':
 	parser.add_argument('--gpu', action='store_true', help='Attempt to run Taichi on GPU instead of CPU.')
 	parser.add_argument('--restart', action='store_true', help='Load the most recent restart (.npz) from output and continue.')
 	parser.add_argument('--load', action='store_true', help='Load the restart (.npz) from output as initial state.')
-	parser.add_argument('--task_id', type=int, default=0, help='Task ID for parallel runs (used to change dynamic parameters).')
+	parser.add_argument('--task-id', type=int, default=0, help='Task ID for parallel runs (used to change dynamic parameters).')
 
 	args = parser.parse_args()
 	D = args.D
