@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32G
 #SBATCH --time=12:00:00
-#SBATCH --job-name=openvort
+#SBATCH --job-name=openvort_video
 #SBATCH --output=slurm-%x-%j.out
 #SBATCH --error=slurm-%x-%j.err
 
@@ -35,7 +35,7 @@ echo "[$(date)] Creating frames in '/scratch/tmp/openvort_video_${SLURM_JOB_ID}'
 "${CMD_FRAMES[@]}"
 
 CMD_VIDEO=(
-	ffmpeg -framerate "${FRAMERATE}" -i "/scratch/tmp/openvort_video_${SLURM_JOB_ID}/frame_%08d.png" \
+	ffmpeg -start_number 1 -framerate "${FRAMERATE}" -i "/scratch/tmp/openvort_video_${SLURM_JOB_ID}/frame_%08d.png" \
 	-c:v h264 -pix_fmt yuv420p "${OUTPUT_DIR}/${FILE_NAME}"
 )
 

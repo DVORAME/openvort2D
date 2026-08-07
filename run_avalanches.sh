@@ -7,6 +7,7 @@
 #SBATCH --job-name=openvort_avalanches
 #SBATCH --output=slurm-%x-%A_%a.out
 #SBATCH --error=slurm-%x-%A_%a.err
+#SBATCH --array=1-${TOTAL_TASKS:-1}
 
 set -euo pipefail
 
@@ -16,8 +17,7 @@ set -euo pipefail
 N="${N:-600}"
 D="${D:-0.1}"
 DT="${DT:-1e-5}"
-SPINDOWN_TMAX="${SPINDOWN_TMAX:-33}"
-SPINDOWN_BASE_TIME="${SPINDOWN_BASE_TIME:-50}"
+TMAX="${TMAX:-33}"
 PIN_TYPE="${PIN_TYPE:-drag}"
 POLARIZATION_TYPE="${POLARIZATION_TYPE:-skewed}"
 POLARIZATION="${POLARIZATION:-1}"
@@ -27,11 +27,8 @@ USE_GPU="${USE_GPU:-1}"
 PREP_OUTPUT_DIR="${PREP_OUTPUT_DIR:-output_prep_lattice}"
 AVALANCHE_ROOT="${AVALANCHE_ROOT:-output_avalanches}"
 
-# One array item uses one factor. With default #SBATCH --array=1-5, keep 5 values here.
-SPINDOWN_RATE_FACTORS=(${SPINDOWN_RATE_FACTORS:-1 2 3 4 5})
-
 TASK_ID="${SLURM_ARRAY_TASK_ID:-1}"
-TOTAL_TASKS="${TOTAL_TASKS:-${#SPINDOWN_RATE_FACTORS[@]}}"
+TOTAL_TASKS="${TOTAL_TASKS:-1}"
 
 if (( TASK_ID < 1 || TASK_ID > TOTAL_TASKS )); then
 	echo "ERROR: task id ${TASK_ID} is out of range 1..${TOTAL_TASKS}"
@@ -90,11 +87,10 @@ else
 	done
 fi
 
-RATE_FACTOR="${SPINDOWN_RATE_FACTORS[$((TASK_ID - 1))]}"
 TASK_OUTPUT_DIR="${AVALANCHE_ROOT}/output_${TASK_ID}"
 
-OMEGA_EXPRESSION=${OMEGA_EXPRESSION:-2*${N}*KAPPA/np.pi/D**2*(1-2*${N}*KAPPA/np.pi/D**2*t/${SPINDOWN_BASE_TIME}/${RATE_FACTOR}/2/np.pi)}
-PINNING_V_EXPRESSION="${PINNING_V_EXPRESSION:-${N}*KAPPA/D/np.pi/500*3}"
+OMEGA_EXPRESSION=${OMEGA_EXPRESSION:-2*${N}*KAPPA/np.pi/D**2*(1-t/${TMAX})}
+PINNING_V_EXPRESSION="${PINNING_V_EXPRESSION:-0}"
 
 echo "[$(date)] Running avalanche task ${TASK_ID}/${TOTAL_TASKS}"
 echo "prep='${PREP_OUTPUT_DIR}', restart='${SOURCE_RESTART_FILE}', output='${TASK_OUTPUT_DIR}', rate_factor=${RATE_FACTOR}"
@@ -102,7 +98,7 @@ echo "prep='${PREP_OUTPUT_DIR}', restart='${SOURCE_RESTART_FILE}', output='${TAS
 CMD=(
 	pyenv exec python src/main.py
 	--N "${N}"
-	--tmax "${SPINDOWN_TMAX}"
+	--tmax "${TMAX}"
 	--dt "${DT}"
 	--pin-type "${PIN_TYPE}"
 	--D "${D}"
@@ -117,6 +113,7 @@ CMD=(
 	--no-plot-save
 	--output "${TASK_OUTPUT_DIR}"
 	--load
+	--task-id "${TASK_ID}"
 )
 
 if [[ "${USE_GPU}" == "1" ]]; then
