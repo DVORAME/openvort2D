@@ -718,14 +718,17 @@ class VortexPoints:
 			# If depinned: apply mutual-friction modified velocity; else zero
 			mf_vx = np.where(depinned, self.vx + alpha*self.vy*self.signs - alphap*self.vx, 0)
 			mf_vy = np.where(depinned, self.vy - alpha*self.vx*self.signs - alphap*self.vy, 0)
+			self.depinned = depinned
 		elif self.pin_type == 'drag':
 			# Use speed-dependent coefficients
 			mf_vx = np.where(depinned, self.vx + alpha_hat*self.vy*self.signs - alphap_hat*self.vx, 0)
 			mf_vy = np.where(depinned, self.vy - alpha_hat*self.vx*self.signs - alphap_hat*self.vy, 0)
+			self.depinned = depinned
 		elif self.pin_type == 'none':
 			# No pinning; apply mutual-friction everywhere
 			mf_vx = self.vx + alpha*self.vy*self.signs - alphap*self.vx
 			mf_vy = self.vy - alpha*self.vx*self.signs - alphap*self.vy
+			self.depinned = np.ones_like(self.vx, dtype=bool)
 		else:
 			raise ValueError(f"Unknown pin type, {self.pin_type}.")
 
