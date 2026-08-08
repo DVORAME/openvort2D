@@ -53,6 +53,8 @@ CMD=(
 	--no-plot
 	--no-plot-save
 	--output "${PREP_OUTPUT_DIR}"
+	--alpha 0
+	--alphap 0
 )
 
 if [[ "${USE_GPU}" == "1" ]]; then
