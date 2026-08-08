@@ -24,6 +24,8 @@ POLARIZATION="${POLARIZATION:-1}"
 SAVE_EVERY="${SAVE_EVERY:-1000}"
 OMEGA_EXPRESSION=${OMEGA_EXPRESSION:-2*${N}*KAPPA/np.pi/D**2*(1-t/${TMAX})}
 PINNING_V_EXPRESSION="${PINNING_V_EXPRESSION:-0}"
+ALPHA="${ALPHA:-0.03}"
+ALPHA_PRIME="${ALPHA_PRIME:-0.0176}"
 USE_GPU="${USE_GPU:-1}"
 
 PREP_OUTPUT_DIR="${PREP_OUTPUT_DIR:-output_prep_lattice}"
@@ -107,6 +109,8 @@ CMD=(
 	--pinning-v-ex "${PINNING_V_EXPRESSION}"
 	--polarization-type "${POLARIZATION_TYPE}"
 	--polarization "${POLARIZATION}"
+	--alpha "${ALPHA}"
+	--alphap "${ALPHA_PRIME}"
 	--save
 	--save-every "${SAVE_EVERY}"
 	--no-plot

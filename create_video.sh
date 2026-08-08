@@ -15,6 +15,8 @@ OUTPUT_DIR=${OUTPUT_DIR:-'videos'}
 FILE_NAME=${FILE_NAME:-"openvort_${SLURM_JOB_ID}.mp4"}
 FRAMERATE=${FRAMERATE:-30}
 INFO=${INFO:-1}
+ROTATING_FRAME=${ROTATING_FRAME:-0}
+MARK_DEPINNED=${MARK_DEPINNED:-0}
 DPI=${DPI:-300}
 
 echo "[$(date)] Creating video from '${INPUT}' in '${OUTPUT_DIR}'"
@@ -28,6 +30,14 @@ CMD_FRAMES=(
 
 if [[ "${INFO}" == "1" ]]; then
 	CMD_FRAMES+=(--info)
+fi
+
+if [[ "${ROTATING_FRAME}" == "1" ]]; then
+	CMD_FRAMES+=(--rotating-frame)
+fi
+
+if [[ "${MARK_DEPINNED}" == "1" ]]; then
+	CMD_FRAMES+=(--mark-depinned)
 fi
 
 echo "[$(date)] Creating frames in '/scratch/tmp/openvort_video_${SLURM_JOB_ID}'"
