@@ -36,7 +36,7 @@ TOTAL_TASKS="${TOTAL_TASKS:-1}"
 
 if (( TASK_ID < 1 || TASK_ID > TOTAL_TASKS )); then
 	echo "ERROR: task id ${TASK_ID} is out of range 1..${TOTAL_TASKS}"
-	echo "Set #SBATCH --array=1-${TOTAL_TASKS} or adjust SPINDOWN_RATE_FACTORS."
+	echo "Set #SBATCH --array=1-${TOTAL_TASKS} or adjust TOTAL_TASKS."
 	exit 1
 fi
 
