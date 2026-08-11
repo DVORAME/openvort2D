@@ -11,7 +11,7 @@
 set -euo pipefail
 
 INPUT=${INPUT:-'output'}
-OUTPUT_DIR=${OUTPUT_DIR:-'videos'}
+OUTPUT_DIR=${OUTPUT_DIR:-${INPUT}}
 FILE_NAME=${FILE_NAME:-"openvort_${SLURM_JOB_ID}.mp4"}
 FRAMERATE=${FRAMERATE:-30}
 INFO=${INFO:-1}
