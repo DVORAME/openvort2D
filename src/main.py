@@ -239,7 +239,6 @@ if __name__ == '__main__':
 		elif not args.no_plot_save:
 			plt.ioff()
 	
-	phi = 0
 	dt = args.dt
 	last_inject = 0
 	it = 0
@@ -267,7 +266,6 @@ if __name__ == '__main__':
 			# tuc = time.time()
 			vp.step(dt, omega)
 			# tyc = time.time()
-			phi += omega*dt
 			if calculate_omega:
 				omega = omega_func(vp.t)
 			# TODO: Maybe switch order to eliminate one call of anihilate()?
@@ -282,10 +280,10 @@ if __name__ == '__main__':
 				neg.set_xdata(vp.xs[vp.signs < 0])
 				neg.set_ydata(vp.ys[vp.signs < 0])
 				if args.circle:
-					handle.set_xdata([np.cos(phi)*D/2])
-					handle.set_ydata([np.sin(phi)*D/2])
+					handle.set_xdata([np.cos(vp.phi)*D/2])
+					handle.set_ydata([np.sin(vp.phi)*D/2])
 				if args.plot_info:
-					info_text.set_text(f"t = {vp.t:.6e} s\nN = {abs(vp.signs).sum()}\nL = {sum(vp.signs):d} kappa\nphi = {phi:.6e} rad\nomega = {omega:.6e} rad/s")
+					info_text.set_text(f"t = {vp.t:.6e} s\nN = {abs(vp.signs).sum()}\nL = {sum(vp.signs):d} kappa\nphi = {vp.phi:.6e} rad\nomega = {omega:.6e} rad/s")
 			if not args.no_plot:
 				fig.canvas.draw()
 				fig.canvas.flush_events()
@@ -301,7 +299,7 @@ if __name__ == '__main__':
 				np.savez(f'{output}/vp_{frame:08d}.npz', vp)
 				save_rate = save_rate*(1 + args.variable_save_rate)
 			if save_countdown == 0:
-				save_string = "{it:d},{t:.6e},{N:d},{L:.6e},{phi:.6e},{omega:.6e}\n".format(it=it, t=vp.t, N=N, L=sum(vp.signs), phi=phi, omega=omega)
+				save_string = "{it:d},{t:.6e},{N:d},{L:.6e},{phi:.6e},{omega:.6e}\n".format(it=it, t=vp.t, N=N, L=sum(vp.signs), phi=vp.phi, omega=omega)
 				file.write(save_string)
 				file.flush()
 				save_countdown = int(save_rate)
