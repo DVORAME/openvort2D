@@ -68,8 +68,8 @@ if __name__ == '__main__':
 	parser.add_argument('--tmax', type=float, default=None,
 						help="Maximum simulation time (seconds). If unspecified run until vortices annihilate.")
 	
-	parser.add_argument('--alpha', type=float, default=0.03, help='Mutual friction coefficient alpha.')
-	parser.add_argument('--alphap', type=float, default=1.76e-2, help="Mutual friction coefficient alpha' (prime).")
+	parser.add_argument('--alpha', type=str, default=0.03, help='Mutual friction coefficient alpha.')
+	parser.add_argument('--alphap', type=str, default=1.76e-2, help="Mutual friction coefficient alpha' (prime).")
 	parser.add_argument('--pinning-v', type=float, default=0, help='Characteristic pinning velocity vpin used for depinning threshold models.')
 	parser.add_argument('--pinning-v-ex', type=str, default='', help="Pinning velocity as an expression. Overrides --pinning-v if specified.")
 	parser.add_argument('--pin-type', type=str, default='threshold', 
@@ -98,6 +98,7 @@ if __name__ == '__main__':
 	
 	parser.add_argument('--save', action='store_true', help='Enable saving of frames and restart snapshots.')
 	parser.add_argument('--save-every', type=int, default=1, help='Save every N iterations (initial). Can be increased by --variable-save-rate.')
+	parser.add_argument('--save-last', action='store_true', help='Save the last frame and restart file even if not on a save interval.')
 	parser.add_argument('--variable-save-rate', type=float, default=0,
 						help="Fractional increase of save interval between frames. Positive => sparser saves over time.")
 	parser.add_argument('--no-plot', action='store_true', help='Disable interactive plotting (recommended for headless runs).')
@@ -113,8 +114,8 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 	D = args.D
-	alpha = args.alpha
-	alphap = args.alphap
+	alpha = eval(args.alpha)
+	alphap = eval(args.alphap)
 	task_id = args.task_id
 	calculate_omega = args.omega_ex != ''
 	if calculate_omega:
@@ -305,6 +306,8 @@ if __name__ == '__main__':
 				break
 			if vp.t >= tmax:
 				print(f"Reached tmax = {tmax}. Stopping simulation.")
+				if args.save_last:
+					np.savez(f'{output}/vp_{frame:08d}.npz', vp)
 				break
 			it += 1
 			save_countdown -= 1

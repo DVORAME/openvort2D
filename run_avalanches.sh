@@ -7,7 +7,7 @@
 #SBATCH --job-name=openvort_avalanches
 #SBATCH --output=slurm-%x-%A_%a.out
 #SBATCH --error=slurm-%x-%A_%a.err
-#SBATCH --array=1-10
+#SBATCH --array=1-1
 
 set -euo pipefail
 
@@ -24,8 +24,8 @@ POLARIZATION="${POLARIZATION:-1}"
 SAVE_EVERY="${SAVE_EVERY:-1000}"
 OMEGA_EXPRESSION=${OMEGA_EXPRESSION:-2*${N}*KAPPA/np.pi/D**2*(1-t/${TMAX})}
 PINNING_V_EXPRESSION="${PINNING_V_EXPRESSION:-0}"
-ALPHA="${ALPHA:-0.03}"
-ALPHA_PRIME="${ALPHA_PRIME:-0.0176}"
+ALPHA="${ALPHA:-0.005*((${SLURM_ARRAY_TASK_ID}-1)//3)}"
+ALPHA_PRIME="${ALPHA_PRIME:-0.005*((${SLURM_ARRAY_TASK_ID}-1)%3)}"
 USE_GPU="${USE_GPU:-1}"
 
 PREP_OUTPUT_DIR="${PREP_OUTPUT_DIR:-output_prep_lattice}"
