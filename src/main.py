@@ -90,10 +90,12 @@ if __name__ == '__main__':
 	parser.add_argument('--probe-v', type=float, default=0, help='Amplitude of uniform probe flow.')
 	parser.add_argument('--probe-v-freq', type=float, default=0, help='Frequency (Hz) of time-oscillation for probe flows.')
 	parser.add_argument('--probe-type', type=str, default='uniform', 
-						help="Probe flow type. Options: 'uniform' (constant across space), 'grid' (spatially varying), 'combined'.")
+						help="Probe flow type. Options: 'uniform' (constant across space), 'grid' (spatially varying), 'combined', 'harmonic'.")
 	parser.add_argument('--probe-grid', type=int, nargs=2, default=[0,0], help='Integer wave numbers (n,k) used by grid probe flow.')
 	parser.add_argument('--probe-grid-v', type=float, default=0, help='Amplitude for spatial grid probe flow.')
-	
+	parser.add_argument('--probe-harmonic-n', type=int, default=0, help='Radial wave number for harmonic probe flow.')
+	parser.add_argument('--probe-harmonic-k', type=int, default=1, help='Azimuthal wave number for harmonic probe flow.')
+
 	parser.add_argument('--inject', action='store_true', help='Enable periodic injection of vortex-antivortex pairs.')
 	
 	parser.add_argument('--save', action='store_true', help='Enable saving of frames and restart snapshots.')
@@ -166,6 +168,7 @@ if __name__ == '__main__':
 		vp = restart_file['arr_0'].item()
 		vp.step_n = 0
 		vp.t = 0
+		vp.phi = 0
 		vp.vpin = vpin
 		vp.pin_type = args.pin_type
 		vp.probe_type = args.probe_type
@@ -173,6 +176,8 @@ if __name__ == '__main__':
 		vp.probe_v_freq = args.probe_v_freq
 		vp.probe_grid = args.probe_grid
 		vp.probe_grid_v = args.probe_grid_v
+		vp.probe_harmonic_n = args.probe_harmonic_n
+		vp.probe_harmonic_k = args.probe_harmonic_k
 		match args.probe_type:
 			case 'uniform':
 				vp._probe_v = vp.uniform_probe_v
@@ -180,6 +185,8 @@ if __name__ == '__main__':
 				vp._probe_v = vp.grid_probe_v
 			case 'combined':
 				vp._probe_v = vp.combined_probe_v
+			case 'harmonic':
+				vp._probe_v = vp.harmonic_probe_factory(vp.probe_harmonic_n, vp.probe_harmonic_k)
 			case _:
 				raise ValueError(f"Unknown probe type {args.probe_type}")
 		file_mode = 'w'
@@ -199,7 +206,8 @@ if __name__ == '__main__':
 						  walls=args.walls, circle=args.circle, vpin=vpin, pin_type=args.pin_type,
 						  probe_v=args.probe_v, probe_v_freq=args.probe_v_freq,
 						  gridx=args.gridx, gridy=args.gridy, grid_div=args.grid_sigma_div,
-						  probe_type=args.probe_type, probe_grid=args.probe_grid, probe_grid_v=args.probe_grid_v)
+						  probe_type=args.probe_type, probe_grid=args.probe_grid, probe_grid_v=args.probe_grid_v,
+						  probe_harmonic_n=args.probe_harmonic_n, probe_harmonic_k=args.probe_harmonic_k)
 		file_mode='w'
 		frame = 0
 	
@@ -257,11 +265,11 @@ if __name__ == '__main__':
 			vp.check()
 			vp.dissipation(alpha, alphap, omega)
 			# tuc = time.time()
-			vp.step(dt)
+			vp.step(dt, omega)
 			# tyc = time.time()
+			phi += omega*dt
 			if calculate_omega:
 				omega = omega_func(vp.t)
-			phi += omega*dt
 			# TODO: Maybe switch order to eliminate one call of anihilate()?
 			vp.annihilate()
 			vp.check()
