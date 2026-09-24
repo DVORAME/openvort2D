@@ -17,6 +17,7 @@
 
 import numpy as np
 from numpy.random import rand, randn
+from scipy import special
 
 import taichi as ti
 
@@ -491,7 +492,8 @@ class VortexPoints:
 				 walls:bool=False, circle:bool=False, vpin:float=0, pin_type='threshold',
 				 probe_type:str = 'uniform', probe_v:float=0, probe_v_freq:float=0,
 				 probe_grid=None, probe_grid_v=0,
-				 gridx=None, gridy=None, grid_div=None):
+				 gridx=None, gridy=None, grid_div=None,
+				 probe_harmonic_n:int=0, probe_harmonic_k:int=1):
 		self.walls = walls
 		self.circle = circle
 		if walls and circle:
@@ -516,6 +518,8 @@ class VortexPoints:
 		self.probe_v_freq = probe_v_freq
 		self.probe_grid = probe_grid
 		self.probe_grid_v = probe_grid_v
+		self.probe_harmonic_n = probe_harmonic_n
+		self.probe_harmonic_k = probe_harmonic_k
 
 		# TODO: Add option viable for circular boundary
 		match probe_type:
@@ -525,6 +529,8 @@ class VortexPoints:
 				self._probe_v = self.grid_probe_v
 			case 'combined':
 				self._probe_v = self.combined_probe_v
+			case 'harmonic':
+				self._probe_v = self.harmonic_probe_factory(self.probe_harmonic_n, self.probe_harmonic_k)
 			case _:
 				raise ValueError(f"Unknown probe type {probe_type}")
 
@@ -602,8 +608,7 @@ class VortexPoints:
 		self.to_annihilate = np.zeros(N)
 		self.t = 0
 		self.step_n = 0
-		self.omega = 0
-		self.A = 0
+		self.phi = 0
 	
 	def uniform_probe_v(self):
 		"""Return a spatially-uniform oscillatory probe velocity.
@@ -642,6 +647,28 @@ class VortexPoints:
 		vxu, vyu = self.uniform_probe_v()
 		vxg, vyg = self.grid_probe_v()
 		return vxu+vxg, vyu+vyg
+
+	def harmonic_probe_factory(self, n, k):
+		"""Return a function that computes a harmonic probe flow with given wave numbers.
+		"""
+		def harmonic_probe_v():
+			alpha = special.jn_zeros(n, k)[-1]  # Get the k-th zero of the Bessel function of order n
+			rs = np.sqrt(self.xs**2 + self.ys**2)
+			angles = np.arctan2(self.ys, self.xs)
+			omega = self.probe_v_freq * 2 * np.pi
+			J_n = special.jv(n, alpha * rs / (self.D / 2))
+			J_n_prime = special.jvp(n, alpha * rs / (self.D / 2))
+			T = np.cos(omega * self.t)
+			du_dr = self.probe_v * alpha / (self.D / 2) * J_n_prime * T * np.cos(n * angles - self.phi)
+			if n == 0:
+				du_dtheta = np.zeros_like(du_dr)
+			else:
+				du_dtheta = -self.probe_v * n * J_n * T * np.sin(n * angles - self.phi)
+			du_dx = du_dr * self.xs / rs - du_dtheta * self.ys / rs**2
+			du_dy = du_dr * self.ys / rs + du_dtheta * self.xs / rs**2
+			return du_dx, du_dy
+
+		return harmonic_probe_v
 
 	def plot(self, ax):
 		"""Scatter-plot vortices on matplotlib `ax`.
@@ -796,7 +823,7 @@ class VortexPoints:
 				# resize annihilation helper array to match new N
 				self.to_annihilate = np.zeros(self.N)
 
-	def step(self, dt):
+	def step(self, dt, omega):
 		"""Advance positions by Euler step dt and perform periodic cleanup.
 
 		The integrator here is explicit Euler: x += v*dt. Every 100 steps we
@@ -807,6 +834,7 @@ class VortexPoints:
 		self.ys += self.vy*dt
 		# Advance simulation time and step counter
 		self.t += dt
+		self.phi += dt * omega
 		self.step_n += 1
 		# Periodically remove inactive vortices to keep arrays compact
 		if self.step_n % 100 == 0:
