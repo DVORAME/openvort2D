@@ -252,7 +252,7 @@ if __name__ == '__main__':
 		if not args.restart:
 			file.write("it,t,N,L,phi,omega\n")
 		if args.load:
-			save_string = "{it:d},{t:.6e},{N:d},{L:.6e},{phi:.6e},{omega:.6e}\n".format(it=it, t=vp.t, N=abs(vp.signs).sum(), L=sum(vp.signs), phi=phi, omega=omega)
+			save_string = "{it:d},{t:.6e},{N:d},{L:.6e},{phi:.6e},{omega:.6e}\n".format(it=it, t=vp.t, N=abs(vp.signs).sum(), L=sum(vp.signs), phi=vp.phi, omega=omega)
 			file.write(save_string)
 			file.flush()
 		while True:
