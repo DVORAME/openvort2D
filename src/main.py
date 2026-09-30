@@ -187,7 +187,7 @@ if __name__ == '__main__':
 			case 'combined':
 				vp._probe_v = vp.combined_probe_v
 			case 'harmonic':
-				vp._probe_v = vp.harmonic_probe_factory(vp.probe_harmonic_n, vp.probe_harmonic_k)
+				vp._probe_v = vp.harmonic_probe_v
 			case _:
 				raise ValueError(f"Unknown probe type {args.probe_type}")
 		file_mode = 'w'
@@ -247,7 +247,7 @@ if __name__ == '__main__':
 	save_countdown = 0
 	if not args.restart:
 		with open(os.path.join(output, 'info.txt'), 'w') as file:
-			file.write(f"{{'N' : '{args.N}','dt' : '{args.dt}','tmax' : '{args.tmax}','alpha' : '{args.alpha}','alphap' : '{args.alphap}','pinning_v' : '{vpin}','pinning_v_ex' : '{args.pinning_v_ex}','pin_type' : '{args.pin_type}','D' : '{args.D}','walls' : '{args.walls}','circle' : '{args.circle}','omega' : '{args.omega}','omega_ex' : '{args.omega_ex}','polarization' : '{args.polarization}','polarization_type' : '{args.polarization_type}','gridx' : '{args.gridx}','gridy' : '{args.gridy}','grid_sigma_div' : '{args.grid_sigma_div}','probe_v' : '{args.probe_v}','probe_v_freq' : '{args.probe_v_freq}','probe_type' : '{args.probe_type}','probe_grid' : ({args.probe_grid[0]},{args.probe_grid[1]}),'probe_grid_v' : '{args.probe_grid_v}','inject' : '{args.inject}'}}\n")
+			file.write(f"{{'N' : '{args.N}','dt' : '{args.dt}','tmax' : '{args.tmax}','alpha' : '{args.alpha}','alphap' : '{args.alphap}','pinning_v' : '{vpin}','pinning_v_ex' : '{args.pinning_v_ex}','pin_type' : '{args.pin_type}','D' : '{args.D}','walls' : '{args.walls}','circle' : '{args.circle}','omega' : '{args.omega}','omega_ex' : '{args.omega_ex}','polarization' : '{args.polarization}','polarization_type' : '{args.polarization_type}','gridx' : '{args.gridx}','gridy' : '{args.gridy}','grid_sigma_div' : '{args.grid_sigma_div}','probe_v' : '{args.probe_v}','probe_v_freq' : '{args.probe_v_freq}','probe_type' : '{args.probe_type}','probe_grid' : ({args.probe_grid[0]},{args.probe_grid[1]}),'probe_grid_v' : '{args.probe_grid_v}','probe_harmonic_mode' : '({args.probe_harmonic_n},{args.probe_harmonic_k})','inject' : '{args.inject}'}}\n")
 	with open(os.path.join(output, 'out.csv'), file_mode) as file:
 		if not args.restart:
 			file.write("it,t,N,L,phi,omega\n")
