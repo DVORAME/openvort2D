@@ -28,6 +28,12 @@ ALPHA="${ALPHA:-0.005*((${SLURM_ARRAY_TASK_ID}-1)//3)}"
 ALPHA_PRIME="${ALPHA_PRIME:-0.005*((${SLURM_ARRAY_TASK_ID}-1)%3)}"
 USE_GPU="${USE_GPU:-1}"
 
+PROBE_TYPE="${PROBE_TYPE:-harmonic}"
+PROBE_FREQ="${PROBE_FREQ:-10000}"
+PROBE_V="${PROBE_V:-0}"
+PROBE_N="${PROBE_N:-1}"
+PROBE_K="${PROBE_K:-1}"
+
 PREP_OUTPUT_DIR="${PREP_OUTPUT_DIR:-output_prep_lattice}"
 AVALANCHE_ROOT="${AVALANCHE_ROOT:-output_avalanches}"
 
@@ -111,6 +117,11 @@ CMD=(
 	--polarization "${POLARIZATION}"
 	--alpha "${ALPHA}"
 	--alphap "${ALPHA_PRIME}"
+	--probe-type "${PROBE_TYPE}"
+	--probe-v "${PROBE_V}"
+	--probe-v-freq "${PROBE_FREQ}"
+	--probe-harmonic-n "${PROBE_N}"
+	--probe-harmonic-k "${PROBE_K}"
 	--save
 	--save-every "${SAVE_EVERY}"
 	--no-plot
