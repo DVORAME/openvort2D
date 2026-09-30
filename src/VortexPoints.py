@@ -530,7 +530,7 @@ class VortexPoints:
 			case 'combined':
 				self._probe_v = self.combined_probe_v
 			case 'harmonic':
-				self._probe_v = self.harmonic_probe_factory(self.probe_harmonic_n, self.probe_harmonic_k)
+				self._probe_v = self.harmonic_probe_v
 			case _:
 				raise ValueError(f"Unknown probe type {probe_type}")
 
@@ -648,27 +648,29 @@ class VortexPoints:
 		vxg, vyg = self.grid_probe_v()
 		return vxu+vxg, vyu+vyg
 
-	def harmonic_probe_factory(self, n, k):
-		"""Return a function that computes a harmonic probe flow with given wave numbers.
-		"""
-		def harmonic_probe_v():
-			alpha = special.jn_zeros(n, k)[-1]  # Get the k-th zero of the Bessel function of order n
-			rs = np.sqrt(self.xs**2 + self.ys**2)
-			angles = np.arctan2(self.ys, self.xs)
-			omega = self.probe_v_freq * 2 * np.pi
-			J_n = special.jv(n, alpha * rs / (self.D / 2))
-			J_n_prime = special.jvp(n, alpha * rs / (self.D / 2))
-			T = np.cos(omega * self.t)
-			du_dr = self.probe_v * alpha / (self.D / 2) * J_n_prime * T * np.cos(n * angles - self.phi)
-			if n == 0:
-				du_dtheta = np.zeros_like(du_dr)
-			else:
-				du_dtheta = -self.probe_v * n * J_n * T * np.sin(n * angles - self.phi)
-			du_dx = du_dr * self.xs / rs - du_dtheta * self.ys / rs**2
-			du_dy = du_dr * self.ys / rs + du_dtheta * self.xs / rs**2
-			return du_dx, du_dy
+	def harmonic_probe_v(self):
+		"""Compute a harmonic probe flow with given wave numbers at time t.
 
-		return harmonic_probe_v
+		This function evaluates the harmonic probe flow at the current
+		vortex positions `(self.xs, self.ys)` and time `t`. The flow is
+		separable in polar coordinates and uses Bessel functions of order
+		`n` with the `k`-th zero to define the radial structure.
+		"""
+		alpha = special.jn_zeros(self.probe_harmonic_n, self.probe_harmonic_k)[-1]  # Get the k-th zero of the Bessel function of order n
+		rs = np.sqrt(self.xs**2 + self.ys**2)
+		angles = np.arctan2(self.ys, self.xs)
+		omega = self.probe_v_freq * 2 * np.pi
+		J_n = special.jv(self.probe_harmonic_n, alpha * rs / (self.D / 2))
+		J_n_prime = special.jvp(self.probe_harmonic_n, alpha * rs / (self.D / 2))
+		T = np.cos(omega * self.t)
+		du_dr = self.probe_v * alpha / (self.D / 2) * J_n_prime * T * np.cos(self.probe_harmonic_n * angles - self.phi)
+		if self.probe_harmonic_n == 0:
+			du_dtheta = np.zeros_like(du_dr)
+		else:
+			du_dtheta = -self.probe_v * self.probe_harmonic_n * J_n * T * np.sin(self.probe_harmonic_n * angles - self.phi)
+		du_dx = du_dr * self.xs / rs - du_dtheta * self.ys / rs**2
+		du_dy = du_dr * self.ys / rs + du_dtheta * self.xs / rs**2
+		return du_dx, du_dy
 
 	def plot(self, ax):
 		"""Scatter-plot vortices on matplotlib `ax`.
