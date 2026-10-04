@@ -18,6 +18,8 @@ if __name__ == "__main__":
 	parser.add_argument("--show", action="store_true", help="Show the plot as interactive animation.")
 	parser.add_argument("--save", action="store_true", help="Save the plots as image files.")
 	parser.add_argument("--info", action="store_true", help="Add information to the plot.")
+	parser.add_argument("--mark-depinned", action="store_true", help="Mark depinned vortices in the plot.")
+	parser.add_argument("--rotating-frame", action="store_true", help="Use a rotating frame of reference for the plot.")
 	parser.add_argument("--dpi", type=int, default=300, help="DPI for saved images. Default is 300.")
 	parser.add_argument("--plot-pause-time", type=float, default=0.001, help="Pause time (seconds) between plot updates for interactive visualization.")
 
@@ -47,12 +49,14 @@ if __name__ == "__main__":
 		info = ast.literal_eval(s)
 	out = pd.read_csv(os.path.join(input, 'out.csv'), sep=',', header=0)
 
-	circle = info.get('circle', False)
+	c = info.get('circle', False)
 	D = float(info.get('D'))
+	print(c)
 
 	
 	fig, ax = plt.subplots()
-	if circle:
+	if c:
+		print("Setting limits for circular domain")
 		ax.set_xlim(-D/2, D/2)
 		ax.set_ylim(-D/2, D/2)
 		circle = plt.Circle((0, 0), D/2, color='k', fill=False)
@@ -64,6 +68,9 @@ if __name__ == "__main__":
 	ax.set_aspect('equal')
 	pos, = ax.plot(vp.xs[vp.signs > 0], vp.ys[vp.signs > 0], 'o', color='r', ms=2)
 	neg, = ax.plot(vp.xs[vp.signs < 0], vp.ys[vp.signs < 0], 'o', color='b', ms=2)
+
+	if args.mark_depinned:
+		depinned_points, = ax.plot(vp.xs[vp.depinned], vp.ys[vp.depinned], 'o', color='black', ms=4, zorder = 0.5)
 
 	if args.info:
 		info_text = ax.text(0.02, 0.98, '', transform=ax.transAxes, fontsize=10,
@@ -80,13 +87,28 @@ if __name__ == "__main__":
 		vp = np.load(vp_files[i], allow_pickle=True)['arr_0'].item()
 		if not hasattr(vp, 'step_n'):
 			vp.step_n = 0
+		if args.rotating_frame:
+			xs = vp.xs * np.cos(out['phi'][i]) + vp.ys * np.sin(out['phi'][i])
+			ys = -vp.xs * np.sin(out['phi'][i]) + vp.ys * np.cos(out['phi'][i])
+			vp.vx = vp.vx * np.cos(out['phi'][i]) + vp.vy * np.sin(out['phi'][i]) + out['omega'][i] * ys
+			vp.vy = -vp.vx * np.sin(out['phi'][i]) + vp.vy * np.cos(out['phi'][i]) - out['omega'][i] * xs
+			vp.xs = xs
+			vp.ys = ys
 		pos.set_xdata(vp.xs[vp.signs > 0])
 		pos.set_ydata(vp.ys[vp.signs > 0])
 		neg.set_xdata(vp.xs[vp.signs < 0])
 		neg.set_ydata(vp.ys[vp.signs < 0])
-		if circle:
-			handle.set_xdata([np.cos(out['phi'][i])*D/2])
-			handle.set_ydata([np.sin(out['phi'][i])*D/2])
+
+		if args.mark_depinned:
+			depinned_points.set_xdata(vp.xs[vp.depinned])
+			depinned_points.set_ydata(vp.ys[vp.depinned])
+		if c:
+			if args.rotating_frame:
+				handle.set_xdata([np.cos(-out['phi'][i])*D/2])
+				handle.set_ydata([np.sin(-out['phi'][i])*D/2])
+			else:
+				handle.set_xdata([np.cos(out['phi'][i])*D/2])
+				handle.set_ydata([np.sin(out['phi'][i])*D/2])
 		if args.info:
 			info_text.set_text(f"t = {vp.t:.6e} s\nN = {abs(vp.signs).sum():d}\nL = {sum(vp.signs):d} kappa\nphi = {out['phi'][i]:.6e} rad\nomega = {out['omega'][i]:.6e} rad/s")
 		if args.show:

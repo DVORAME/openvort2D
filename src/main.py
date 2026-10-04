@@ -90,10 +90,12 @@ if __name__ == '__main__':
 	parser.add_argument('--probe-v', type=float, default=0, help='Amplitude of uniform probe flow.')
 	parser.add_argument('--probe-v-freq', type=float, default=0, help='Frequency (Hz) of time-oscillation for probe flows.')
 	parser.add_argument('--probe-type', type=str, default='uniform', 
-						help="Probe flow type. Options: 'uniform' (constant across space), 'grid' (spatially varying), 'combined'.")
+						help="Probe flow type. Options: 'uniform' (constant across space), 'grid' (spatially varying), 'combined', 'harmonic'.")
 	parser.add_argument('--probe-grid', type=int, nargs=2, default=[0,0], help='Integer wave numbers (n,k) used by grid probe flow.')
 	parser.add_argument('--probe-grid-v', type=float, default=0, help='Amplitude for spatial grid probe flow.')
-	
+	parser.add_argument('--probe-harmonic-n', type=int, default=0, help='Radial wave number for harmonic probe flow.')
+	parser.add_argument('--probe-harmonic-k', type=int, default=1, help='Azimuthal wave number for harmonic probe flow.')
+
 	parser.add_argument('--inject', action='store_true', help='Enable periodic injection of vortex-antivortex pairs.')
 	
 	parser.add_argument('--save', action='store_true', help='Enable saving of frames and restart snapshots.')
@@ -109,11 +111,13 @@ if __name__ == '__main__':
 	parser.add_argument('--gpu', action='store_true', help='Attempt to run Taichi on GPU instead of CPU.')
 	parser.add_argument('--restart', action='store_true', help='Load the most recent restart (.npz) from output and continue.')
 	parser.add_argument('--load', action='store_true', help='Load the restart (.npz) from output as initial state.')
+	parser.add_argument('--task_id', type=int, default=0, help='Task ID for parallel runs (used to change dynamic parameters).')
 
 	args = parser.parse_args()
 	D = args.D
 	alpha = args.alpha
 	alphap = args.alphap
+	task_id = args.task_id
 	calculate_omega = args.omega_ex != ''
 	if calculate_omega:
 		# If omega is specified as a function of time, define a lambda function to evaluate it.
@@ -164,6 +168,7 @@ if __name__ == '__main__':
 		vp = restart_file['arr_0'].item()
 		vp.step_n = 0
 		vp.t = 0
+		vp.phi = 0
 		vp.vpin = vpin
 		vp.pin_type = args.pin_type
 		vp.probe_type = args.probe_type
@@ -171,6 +176,8 @@ if __name__ == '__main__':
 		vp.probe_v_freq = args.probe_v_freq
 		vp.probe_grid = args.probe_grid
 		vp.probe_grid_v = args.probe_grid_v
+		vp.probe_harmonic_n = args.probe_harmonic_n
+		vp.probe_harmonic_k = args.probe_harmonic_k
 		match args.probe_type:
 			case 'uniform':
 				vp._probe_v = vp.uniform_probe_v
@@ -178,6 +185,8 @@ if __name__ == '__main__':
 				vp._probe_v = vp.grid_probe_v
 			case 'combined':
 				vp._probe_v = vp.combined_probe_v
+			case 'harmonic':
+				vp._probe_v = vp.harmonic_probe_factory(vp.probe_harmonic_n, vp.probe_harmonic_k)
 			case _:
 				raise ValueError(f"Unknown probe type {args.probe_type}")
 		file_mode = 'w'
@@ -197,7 +206,8 @@ if __name__ == '__main__':
 						  walls=args.walls, circle=args.circle, vpin=vpin, pin_type=args.pin_type,
 						  probe_v=args.probe_v, probe_v_freq=args.probe_v_freq,
 						  gridx=args.gridx, gridy=args.gridy, grid_div=args.grid_sigma_div,
-						  probe_type=args.probe_type, probe_grid=args.probe_grid, probe_grid_v=args.probe_grid_v)
+						  probe_type=args.probe_type, probe_grid=args.probe_grid, probe_grid_v=args.probe_grid_v,
+						  probe_harmonic_n=args.probe_harmonic_n, probe_harmonic_k=args.probe_harmonic_k)
 		file_mode='w'
 		frame = 0
 	
@@ -229,7 +239,6 @@ if __name__ == '__main__':
 		elif not args.no_plot_save:
 			plt.ioff()
 	
-	phi = 0
 	dt = args.dt
 	last_inject = 0
 	it = 0
@@ -255,11 +264,10 @@ if __name__ == '__main__':
 			vp.check()
 			vp.dissipation(alpha, alphap, omega)
 			# tuc = time.time()
-			vp.step(dt)
+			vp.step(dt, omega)
 			# tyc = time.time()
 			if calculate_omega:
 				omega = omega_func(vp.t)
-			phi += omega*dt
 			# TODO: Maybe switch order to eliminate one call of anihilate()?
 			vp.annihilate()
 			vp.check()
@@ -272,10 +280,10 @@ if __name__ == '__main__':
 				neg.set_xdata(vp.xs[vp.signs < 0])
 				neg.set_ydata(vp.ys[vp.signs < 0])
 				if args.circle:
-					handle.set_xdata([np.cos(phi)*D/2])
-					handle.set_ydata([np.sin(phi)*D/2])
+					handle.set_xdata([np.cos(vp.phi)*D/2])
+					handle.set_ydata([np.sin(vp.phi)*D/2])
 				if args.plot_info:
-					info_text.set_text(f"t = {vp.t:.6e} s\nN = {abs(vp.signs).sum()}\nL = {sum(vp.signs):d} kappa\nphi = {phi:.6e} rad\nomega = {omega:.6e} rad/s")
+					info_text.set_text(f"t = {vp.t:.6e} s\nN = {abs(vp.signs).sum()}\nL = {sum(vp.signs):d} kappa\nphi = {vp.phi:.6e} rad\nomega = {omega:.6e} rad/s")
 			if not args.no_plot:
 				fig.canvas.draw()
 				fig.canvas.flush_events()
@@ -291,7 +299,7 @@ if __name__ == '__main__':
 				np.savez(f'{output}/vp_{frame:08d}.npz', vp)
 				save_rate = save_rate*(1 + args.variable_save_rate)
 			if save_countdown == 0:
-				save_string = "{it:d},{t:.6e},{N:d},{L:.6e},{phi:.6e},{omega:.6e}\n".format(it=it, t=vp.t, N=N, L=sum(vp.signs), phi=phi, omega=omega)
+				save_string = "{it:d},{t:.6e},{N:d},{L:.6e},{phi:.6e},{omega:.6e}\n".format(it=it, t=vp.t, N=N, L=sum(vp.signs), phi=vp.phi, omega=omega)
 				file.write(save_string)
 				file.flush()
 				save_countdown = int(save_rate)
