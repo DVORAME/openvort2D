@@ -656,7 +656,7 @@ class VortexPoints:
 		separable in polar coordinates and uses Bessel functions of order
 		`n` with the `k`-th zero to define the radial structure.
 		"""
-		alpha = special.jn_zeros(self.probe_harmonic_n, self.probe_harmonic_k)[-1]  # Get the k-th zero of the Bessel function of order n
+		alpha = special.jnp_zeros(self.probe_harmonic_n, self.probe_harmonic_k)[-1]  # Get the k-th zero of the Bessel function of order n
 		rs = np.sqrt(self.xs**2 + self.ys**2)
 		angles = np.arctan2(self.ys, self.xs)
 		omega = self.probe_v_freq * 2 * np.pi
