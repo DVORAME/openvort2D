@@ -33,4 +33,5 @@ X, Y = np.meshgrid(x, y)
 A = harmonic_probe_amp(X, Y)
 
 plt.imshow(np.sqrt(A[0]**2 + A[1]**2), cmap='viridis', extent=(-1, 1, -1, 1))
+plt.colorbar(label='Amplitude')
 plt.show()
