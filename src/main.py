@@ -271,7 +271,6 @@ if __name__ == '__main__':
 			# tuc = time.time()
 			vp.step(dt, omega)
 			# tyc = time.time()
-			phi += omega*dt
 			if calculate_omega:
 				omega = omega_func(vp.t)
 			# TODO: Maybe switch order to eliminate one call of anihilate()?
