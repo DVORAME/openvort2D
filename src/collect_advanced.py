@@ -17,7 +17,7 @@ path = args.path
 D_frac = 21/23
 KAPPA = 9.96e-4
 
-for i in range(1, 2):
+for i in range(1, 11):
 	# Load the CSV file into a DataFrame
 	with open(os.path.join(f'{path}/output_{i}', 'info.txt')) as file:
 			s = file.readline().strip()
