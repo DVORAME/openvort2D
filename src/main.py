@@ -159,7 +159,7 @@ if __name__ == '__main__':
 		if not hasattr(vp, 'step_n'):
 			vp.step_n = 0
 		file_mode = 'a'
-		frame = len(vp_files)
+		frame = int(vp_files[-1].split('_')[-1].split('.')[0])
 	elif args.load:
 		vp_files = glob(path.join(output, '*.npz'))
 		vp_files.sort()
