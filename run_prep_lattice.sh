@@ -23,6 +23,8 @@ POLARIZATION="${POLARIZATION:-1}"
 SAVE_EVERY="${SAVE_EVERY:-1000}"
 PREP_OUTPUT_DIR="${PREP_OUTPUT_DIR:-output_prep_lattice}"
 USE_GPU="${USE_GPU:-1}"
+ALPHA="${ALPHA:-0}"
+ALPHAP="${ALPHAP:-0}"
 
 OMEGA_EXPRESSION="${OMEGA_EXPRESSION:-2*${N}*KAPPA/np.pi/D**2}"
 PINNING_V_EXPRESSION="${PINNING_V_EXPRESSION:-${N}*KAPPA/np.pi*0.9}"
@@ -48,13 +50,18 @@ CMD=(
 	--pinning-v-ex "${PINNING_V_EXPRESSION}"
 	--polarization-type "${POLARIZATION_TYPE}"
 	--polarization "${POLARIZATION}"
+	--alpha "${ALPHA}"
+	--alphap "${ALPHAP}"
+	--probe-type harmonic
+	--probe-v "${PROBE_V:-0}"
+	--probe-v-freq 10000
+	--probe-harmonic-n 1
+	--probe-harmonic-k 1
 	--save
 	--save-every "${SAVE_EVERY}"
 	--no-plot
 	--no-plot-save
 	--output "${PREP_OUTPUT_DIR}"
-	--alpha 0
-	--alphap 0
 )
 
 if [[ "${USE_GPU}" == "1" ]]; then

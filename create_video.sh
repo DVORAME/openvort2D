@@ -3,7 +3,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32G
-#SBATCH --time=12:00:00
+#SBATCH --time=1:00:00
 #SBATCH --job-name=openvort_video
 #SBATCH --output=slurm-%x-%j.out
 #SBATCH --error=slurm-%x-%j.err
@@ -15,8 +15,8 @@ OUTPUT_DIR=${OUTPUT_DIR:-${INPUT}}
 FILE_NAME=${FILE_NAME:-"openvort_${SLURM_JOB_ID}.mp4"}
 FRAMERATE=${FRAMERATE:-30}
 INFO=${INFO:-1}
-ROTATING_FRAME=${ROTATING_FRAME:-0}
-MARK_DEPINNED=${MARK_DEPINNED:-0}
+ROTATING_FRAME=${ROTATING_FRAME:-1}
+MARK_DEPINNED=${MARK_DEPINNED:-1}
 DPI=${DPI:-300}
 
 echo "[$(date)] Creating video from '${INPUT}' in '${OUTPUT_DIR}'"
