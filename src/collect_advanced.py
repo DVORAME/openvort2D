@@ -13,6 +13,7 @@ parser.add_argument('--path', type=str, default='output', help='Path to the outp
 parser.add_argument('--n', type=int, default=10, help='Number of output directories to process')
 parser.add_argument('--subplots', action='store_true', help='Whether to create subplots for each output directory')
 parser.add_argument('--var', nargs="*", type=str, default=[], help='Variables changing in plots')
+parser.add_argument('--no-plot', action='store_true', help='Whether to plot the data')
 
 args = parser.parse_args()
 path = args.path
@@ -32,6 +33,8 @@ for i in range(1, args.n + 1):
 	vp_files.sort()
 	vps = np.fromiter(map(lambda f: np.load(f, allow_pickle=True)['arr_0'].item(), vp_files), object)
 	N = np.fromiter(map(lambda vp: np.sum((vp.xs ** 2 + vp.ys ** 2) < D**2/4), vps), int)
+	print(f'Processed output_{i}: avalanchity: {np.var(N - df["omega"] * np.pi * D**2 / 2 / KAPPA)}')
+	if args.no_plot: continue
 	# Plotting the data
 	if args.subplots:
 		if args.n % 2 == 0:
@@ -48,7 +51,9 @@ for i in range(1, args.n + 1):
 	if not args.subplots:
 		plt.savefig(f'{path}/output_{i}/plot_cropped.png')
 	else:
-		plt.title(', '.join([f'{k}={v}' for k, v in info.items() if k in args.var]))
+
+		plt.title(', '.join([f'{'α' if k == "alpha" else 'α\''}={eval(v)}' for k, v in info.items() if k in args.var]))
+if args.no_plot: exit()
 if args.subplots:
 	if args.n % 2 == 0:
 		plt.gcf().set_size_inches(10, 5 * (args.n // 2))
