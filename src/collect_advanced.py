@@ -52,7 +52,7 @@ for i in range(1, args.n + 1):
 		plt.savefig(f'{path}/output_{i}/plot_cropped.png')
 	else:
 
-		plt.title(', '.join([f'{'α' if k == "alpha" else 'α\''}={eval(v)}' for k, v in info.items() if k in args.var]))
+		plt.title(', '.join([f'v_probe={i-1}%v_pin' for k, v in info.items() if k in args.var]))
 if args.no_plot: exit()
 if args.subplots:
 	if args.n % 2 == 0:
