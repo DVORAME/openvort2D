@@ -27,14 +27,24 @@ def harmonic_probe_amp(x, y):
 	du_dy = du_dr * y / r + du_dtheta * x / r**2
 	return du_dx, du_dy
 
-x = np.linspace(-1, 1, 20)
-y = np.linspace(-1, 1, 20)
+x = np.linspace(-1, 1, 200)
+y = np.linspace(-1, 1, 200)
+xq = np.linspace(-1, 1, 20)
+yq = np.linspace(-1, 1, 20)
 X, Y = np.meshgrid(x, y)
+XQ, YQ = np.meshgrid(xq, yq)
+mask = X**2 + Y**2 <= 1.01
+maskq = XQ**2 + YQ**2 <= 1.01
+X = np.where(mask, X, np.nan)
+Y = np.where(mask, Y, np.nan)
+XQ = np.where(maskq, XQ, np.nan)
+YQ = np.where(maskq, YQ, np.nan)
 A = harmonic_probe_amp(X, Y)
+AQ = harmonic_probe_amp(XQ, YQ)
 
 plt.imshow(np.sqrt(A[0]**2 + A[1]**2), cmap='viridis', extent=(-1, 1, -1, 1))
 plt.colorbar(label='Amplituda')
-plt.quiver(X, Y, A[0], A[1], color='black', scale=20)
+plt.quiver(XQ, YQ, AQ[0], AQ[1], color='black', scale=20)
 circle = plt.Circle((0, 0), 1, color='black', fill=False)
 plt.gca().add_artist(circle)
 plt.savefig('harmonic_probe_flow.png', dpi=300)
